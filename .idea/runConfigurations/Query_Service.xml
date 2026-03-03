@@ -1,0 +1,13 @@
+<component name="ProjectRunConfigurationManager">
+  <configuration default="false" name="Query Service" type="SpringBootApplicationConfigurationType" factoryName="Spring Boot">
+    <module name="race-application-query-service" />
+    <option name="SPRING_BOOT_MAIN_CLASS" value="com.race.query.QueryServiceApplication" />
+    <option name="ACTIVE_PROFILES" value="" />
+    <RunnerSettings RunnerId="Run" />
+    <ConfigurationWrapper RunnerId="Run" />
+    <method v="2">
+      <option name="Make" enabled="true" />
+    </method>
+  </configuration>
+</component>
+

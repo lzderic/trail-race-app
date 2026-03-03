@@ -1,0 +1,654 @@
+{
+  "info": {
+    "_postman_id": "trail-race-app-collection-v1",
+    "name": "Trail Race App",
+    "description": "Full API collection for the Trail Race CQRS backend.\n\nHow to use:\n1. Import this file into Postman (File -> Import)\n2. Set command_url and query_url variables if needed\n3. Run Login as Administrator first - jwt_token is set automatically\n4. All other requests pick up the token automatically\n\nDefault base URLs:\n- Command Service: http://localhost:8081\n- Query Service: http://localhost:8082",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "command_url",
+      "value": "http://localhost:8081"
+    },
+    {
+      "key": "query_url",
+      "value": "http://localhost:8082"
+    },
+    {
+      "key": "jwt_token",
+      "value": "",
+      "description": "Auto-populated after running a Login request"
+    },
+    {
+      "key": "race_id",
+      "value": "",
+      "description": "Auto-populated after creating a race"
+    },
+    {
+      "key": "application_id",
+      "value": "",
+      "description": "Auto-populated after creating an application"
+    }
+  ],
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{jwt_token}}",
+        "type": "string"
+      }
+    ]
+  },
+  "item": [
+    {
+      "name": "Health & Info",
+      "item": [
+        {
+          "name": "Health - Command Service",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 200', function () { pm.response.to.have.status(200); });",
+                  "pm.test('Service is UP', function () {",
+                  "    var json = pm.response.json();",
+                  "    pm.expect(json.status).to.eql('UP');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{command_url}}/actuator/health",
+              "host": [
+                "{{command_url}}"
+              ],
+              "path": [
+                "actuator",
+                "health"
+              ]
+            },
+            "description": "Returns health status of the command service. No auth required."
+          },
+          "response": []
+        },
+        {
+          "name": "Health - Query Service",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 200', function () { pm.response.to.have.status(200); });",
+                  "pm.test('Service is UP', function () {",
+                  "    var json = pm.response.json();",
+                  "    pm.expect(json.status).to.eql('UP');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{query_url}}/actuator/health",
+              "host": [
+                "{{query_url}}"
+              ],
+              "path": [
+                "actuator",
+                "health"
+              ]
+            },
+            "description": "Returns health status of the query service. No auth required."
+          },
+          "response": []
+        },
+        {
+          "name": "Info - Command Service",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 200', function () { pm.response.to.have.status(200); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{command_url}}/actuator/info",
+              "host": [
+                "{{command_url}}"
+              ],
+              "path": [
+                "actuator",
+                "info"
+              ]
+            },
+            "description": "Returns app name, version and description. No auth required."
+          },
+          "response": []
+        },
+        {
+          "name": "Info - Query Service",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 200', function () { pm.response.to.have.status(200); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{query_url}}/actuator/info",
+              "host": [
+                "{{query_url}}"
+              ],
+              "path": [
+                "actuator",
+                "info"
+              ]
+            },
+            "description": "Returns app name, version and description. No auth required."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Auth",
+      "item": [
+        {
+          "name": "Login as Administrator (Command)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 200', function () { pm.response.to.have.status(200); });",
+                  "var json = pm.response.json();",
+                  "if (json.token) {",
+                  "    pm.collectionVariables.set('jwt_token', json.token);",
+                  "    console.log('jwt_token saved');",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"admin@trailrace.com\",\n  \"password\": \"admin123\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{command_url}}/api/auth/login",
+              "host": [
+                "{{command_url}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "login"
+              ]
+            },
+            "description": "Login as Administrator. Saves jwt_token automatically."
+          },
+          "response": []
+        },
+        {
+          "name": "Login as Applicant (Query)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 200', function () { pm.response.to.have.status(200); });",
+                  "var json = pm.response.json();",
+                  "if (json.token) {",
+                  "    pm.collectionVariables.set('jwt_token', json.token);",
+                  "    console.log('jwt_token saved');",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"jane@example.com\",\n  \"password\": \"password\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{query_url}}/api/auth/login",
+              "host": [
+                "{{query_url}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "login"
+              ]
+            },
+            "description": "Login as Applicant. Saves jwt_token automatically."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Races - Command (port 8081)",
+      "item": [
+        {
+          "name": "Create Race",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 201', function () { pm.response.to.have.status(201); });",
+                  "var json = pm.response.json();",
+                  "if (json.id) {",
+                  "    pm.collectionVariables.set('race_id', json.id);",
+                  "    console.log('race_id saved:', json.id);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Mountain Classic\",\n  \"distance\": \"MARATHON\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{command_url}}/api/races",
+              "host": [
+                "{{command_url}}"
+              ],
+              "path": [
+                "api",
+                "races"
+              ]
+            },
+            "description": "Creates a race. Distance: FIVE_K | TEN_K | HALF_MARATHON | MARATHON. Saves race_id automatically."
+          },
+          "response": []
+        },
+        {
+          "name": "Update Race (PATCH)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 200', function () { pm.response.to.have.status(200); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Mountain Classic 2026\",\n  \"distance\": \"HALF_MARATHON\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{command_url}}/api/races/{{race_id}}",
+              "host": [
+                "{{command_url}}"
+              ],
+              "path": [
+                "api",
+                "races",
+                "{{race_id}}"
+              ]
+            },
+            "description": "Partially updates a race. All fields are optional."
+          },
+          "response": []
+        },
+        {
+          "name": "Delete Race",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 204', function () { pm.response.to.have.status(204); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{command_url}}/api/races/{{race_id}}",
+              "host": [
+                "{{command_url}}"
+              ],
+              "path": [
+                "api",
+                "races",
+                "{{race_id}}"
+              ]
+            },
+            "description": "Deletes a race by ID."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Applications - Command (port 8081)",
+      "item": [
+        {
+          "name": "Create Application",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 201', function () { pm.response.to.have.status(201); });",
+                  "var json = pm.response.json();",
+                  "if (json.id) {",
+                  "    pm.collectionVariables.set('application_id', json.id);",
+                  "    console.log('application_id saved:', json.id);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"firstName\": \"John\",\n  \"lastName\": \"Doe\",\n  \"club\": \"Trail Blazers\",\n  \"raceId\": \"{{race_id}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{command_url}}/api/applications",
+              "host": [
+                "{{command_url}}"
+              ],
+              "path": [
+                "api",
+                "applications"
+              ]
+            },
+            "description": "Creates a race application. Saves application_id automatically."
+          },
+          "response": []
+        },
+        {
+          "name": "Delete Application",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 204', function () { pm.response.to.have.status(204); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{command_url}}/api/applications/{{application_id}}",
+              "host": [
+                "{{command_url}}"
+              ],
+              "path": [
+                "api",
+                "applications",
+                "{{application_id}}"
+              ]
+            },
+            "description": "Deletes an application by ID."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Races - Query (port 8082)",
+      "item": [
+        {
+          "name": "Get All Races",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 200', function () { pm.response.to.have.status(200); });",
+                  "pm.test('Response is array', function () {",
+                  "    pm.expect(pm.response.json()).to.be.an('array');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{query_url}}/api/races",
+              "host": [
+                "{{query_url}}"
+              ],
+              "path": [
+                "api",
+                "races"
+              ]
+            },
+            "description": "Returns all races from the read-side database."
+          },
+          "response": []
+        },
+        {
+          "name": "Get Race by ID",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 200', function () { pm.response.to.have.status(200); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{query_url}}/api/races/{{race_id}}",
+              "host": [
+                "{{query_url}}"
+              ],
+              "path": [
+                "api",
+                "races",
+                "{{race_id}}"
+              ]
+            },
+            "description": "Returns a race by UUID. Run Create Race first to populate race_id."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Applications - Query (port 8082)",
+      "item": [
+        {
+          "name": "Get All Applications",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 200', function () { pm.response.to.have.status(200); });",
+                  "pm.test('Response is array', function () {",
+                  "    pm.expect(pm.response.json()).to.be.an('array');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{query_url}}/api/applications",
+              "host": [
+                "{{query_url}}"
+              ],
+              "path": [
+                "api",
+                "applications"
+              ]
+            },
+            "description": "Returns all race applications from the read-side database."
+          },
+          "response": []
+        },
+        {
+          "name": "Get Application by ID",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 200', function () { pm.response.to.have.status(200); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{query_url}}/api/applications/{{application_id}}",
+              "host": [
+                "{{query_url}}"
+              ],
+              "path": [
+                "api",
+                "applications",
+                "{{application_id}}"
+              ]
+            },
+            "description": "Returns an application by UUID. Run Create Application first."
+          },
+          "response": []
+        }
+      ]
+    }
+  ]
+}

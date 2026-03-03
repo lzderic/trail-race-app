@@ -1,0 +1,58 @@
+package com.race.command.controller;
+
+import com.race.command.dto.ApplicationRequest;
+import com.race.command.dto.ApplicationResponse;
+import com.race.command.service.ApplicationCommandService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.UUID;
+
+@RestController
+@RequestMapping("/api/applications")
+@RequiredArgsConstructor
+@Tag(name = "Applications (Command)", description = "Create and delete race applications — Administrator only")
+@SecurityRequirement(name = "bearerAuth")
+public class ApplicationCommandController {
+
+    private final ApplicationCommandService applicationCommandService;
+
+    @Operation(summary = "Create an application", description = "Registers a participant application for a race. Publishes a CREATED event.")
+    @ApiResponses({
+        @ApiResponse(responseCode = "201", description = "Application created",
+            content = @Content(schema = @Schema(implementation = ApplicationResponse.class))),
+        @ApiResponse(responseCode = "400", description = "Validation error", content = @Content),
+        @ApiResponse(responseCode = "401", description = "Unauthenticated", content = @Content),
+        @ApiResponse(responseCode = "403", description = "Forbidden — Administrator role required", content = @Content),
+        @ApiResponse(responseCode = "404", description = "Race not found", content = @Content)
+    })
+    @PostMapping
+    public ResponseEntity<ApplicationResponse> createApplication(@Valid @RequestBody ApplicationRequest request) {
+        return ResponseEntity.status(HttpStatus.CREATED).body(applicationCommandService.createApplication(request));
+    }
+
+    @Operation(summary = "Delete an application", description = "Removes a participant application by ID. Publishes a DELETED event.")
+    @ApiResponses({
+        @ApiResponse(responseCode = "204", description = "Application deleted"),
+        @ApiResponse(responseCode = "401", description = "Unauthenticated", content = @Content),
+        @ApiResponse(responseCode = "403", description = "Forbidden — Administrator role required", content = @Content),
+        @ApiResponse(responseCode = "404", description = "Application not found", content = @Content)
+    })
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> deleteApplication(
+            @Parameter(description = "Application UUID") @PathVariable UUID id) {
+        applicationCommandService.deleteApplication(id);
+        return ResponseEntity.noContent().build();
+    }
+}

@@ -1,0 +1,111 @@
+services:
+
+  # ── PostgreSQL ──────────────────────────────────────────────────
+  postgres:
+    image: postgres:16-alpine
+    container_name: trailrace-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-trailrace}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-trailrace}
+      POSTGRES_MULTIPLE_DATABASES: trailrace_command,trailrace_query
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./scripts/init-multiple-dbs.sh:/docker-entrypoint-initdb.d/init-multiple-dbs.sh
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-trailrace}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ── RabbitMQ ────────────────────────────────────────────────────
+  rabbitmq:
+    image: rabbitmq:3.13-management-alpine
+    container_name: trailrace-rabbitmq
+    restart: unless-stopped
+    environment:
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_USERNAME:-guest}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD:-guest}
+    ports:
+      - "${RABBITMQ_PORT:-5672}:5672"
+      - "${RABBITMQ_MANAGEMENT_PORT:-15672}:15672"
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ── Command Service ─────────────────────────────────────────────
+  command-service:
+    build:
+      context: ./backend/race_application_command_service
+      dockerfile: Dockerfile
+    container_name: trailrace-command-service
+    restart: unless-stopped
+    ports:
+      - "${COMMAND_SERVICE_PORT:-8081}:8081"
+    environment:
+      DB_URL: jdbc:postgresql://postgres:5432/trailrace_command
+      DB_USERNAME: ${POSTGRES_USER:-trailrace}
+      DB_PASSWORD: ${POSTGRES_PASSWORD:-trailrace}
+      RABBITMQ_HOST: rabbitmq
+      RABBITMQ_PORT: 5672
+      RABBITMQ_USERNAME: ${RABBITMQ_USERNAME:-guest}
+      RABBITMQ_PASSWORD: ${RABBITMQ_PASSWORD:-guest}
+      JWT_SECRET: ${JWT_SECRET:-a-very-long-secret-key-that-is-at-least-256-bits-long-for-hs256}
+      JWT_EXPIRATION_MS: ${JWT_EXPIRATION_MS:-86400000}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+
+  # ── Query Service ───────────────────────────────────────────────
+  query-service:
+    build:
+      context: ./backend/race_application_query_service
+      dockerfile: Dockerfile
+    container_name: trailrace-query-service
+    restart: unless-stopped
+    ports:
+      - "${QUERY_SERVICE_PORT:-8082}:8082"
+    environment:
+      DB_URL: jdbc:postgresql://postgres:5432/trailrace_query
+      DB_USERNAME: ${POSTGRES_USER:-trailrace}
+      DB_PASSWORD: ${POSTGRES_PASSWORD:-trailrace}
+      RABBITMQ_HOST: rabbitmq
+      RABBITMQ_PORT: 5672
+      RABBITMQ_USERNAME: ${RABBITMQ_USERNAME:-guest}
+      RABBITMQ_PASSWORD: ${RABBITMQ_PASSWORD:-guest}
+      JWT_SECRET: ${JWT_SECRET:-a-very-long-secret-key-that-is-at-least-256-bits-long-for-hs256}
+      JWT_EXPIRATION_MS: ${JWT_EXPIRATION_MS:-86400000}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+
+  # ── Frontend ────────────────────────────────────────────────────
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        VITE_COMMAND_API_URL: ${VITE_COMMAND_API_URL:-http://localhost:8081}
+        VITE_QUERY_API_URL: ${VITE_QUERY_API_URL:-http://localhost:8082}
+    container_name: trailrace-frontend
+    restart: unless-stopped
+    ports:
+      - "${FRONTEND_PORT:-3000}:80"
+    depends_on:
+      - command-service
+      - query-service
+
+volumes:
+  postgres_data:
+  rabbitmq_data:
+
