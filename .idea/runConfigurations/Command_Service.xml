@@ -1,0 +1,20 @@
+<component name="ProjectRunConfigurationManager">
+  <configuration default="false" name="Command Service" type="SpringBootApplicationConfigurationType" factoryName="Spring Boot">
+    <envs>
+      <env name="DB_URL" value="jdbc:postgresql://localhost:5432/trailrace_command" />
+      <env name="DB_USERNAME" value="trailrace" />
+      <env name="DB_PASSWORD" value="trailrace" />
+      <env name="RABBITMQ_HOST" value="localhost" />
+      <env name="RABBITMQ_PORT" value="5672" />
+      <env name="RABBITMQ_USERNAME" value="guest" />
+      <env name="RABBITMQ_PASSWORD" value="guest" />
+    </envs>
+    <option name="MAIN_CLASS_NAME" value="com.race.command.CommandServiceApplication" />
+    <module name="race-application-command-service" />
+    <option name="SPRING_BOOT_MAIN_CLASS" value="com.race.command.CommandServiceApplication" />
+    <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/backend/race_application_command_service" />
+    <method v="2">
+      <option name="Make" enabled="true" />
+    </method>
+  </configuration>
+</component>

@@ -6,7 +6,7 @@ import applicationsReducer, { clearApplicationError } from '../store/slices/appl
 
 function makeStore() {
   return configureStore({
-    reducer: { auth: authReducer, races: racesReducer, applications: applicationsReducer }
+    reducer: { auth: authReducer, races: racesReducer, applications: applicationsReducer },
   })
 }
 
@@ -50,4 +50,3 @@ describe('applicationsSlice', () => {
     expect(store.getState().applications.error).toBeNull()
   })
 })
-

@@ -5,6 +5,7 @@ import { LoginPage } from './pages/LoginPage'
 import { RacesListPage } from './pages/races/RacesListPage'
 import { ApplicationsListPage } from './pages/applications/ApplicationsListPage'
 import { AdminRacesPage } from './pages/admin/AdminRacesPage'
+import { AdminApplicationsPage } from './pages/admin/AdminApplicationsPage'
 import { NotFoundPage } from './pages/NotFoundPage'
 
 function App() {
@@ -25,6 +26,7 @@ function App() {
       <Route element={<ProtectedRoute requiredRole="Administrator" />}>
         <Route element={<Layout />}>
           <Route path="/admin/races" element={<AdminRacesPage />} />
+          <Route path="/admin/applications" element={<AdminApplicationsPage />} />
         </Route>
       </Route>
 
@@ -36,4 +38,3 @@ function App() {
 }
 
 export default App
-

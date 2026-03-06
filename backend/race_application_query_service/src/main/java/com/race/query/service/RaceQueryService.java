@@ -4,6 +4,7 @@ import com.race.query.dto.RaceResponse;
 import com.race.query.entity.Race;
 import com.race.query.enums.Distance;
 import com.race.query.exception.ResourceNotFoundException;
+import com.race.query.repository.ApplicationRepository;
 import com.race.query.repository.RaceRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -19,6 +20,7 @@ import java.util.UUID;
 public class RaceQueryService {
 
     private final RaceRepository raceRepository;
+    private final ApplicationRepository applicationRepository;
 
     @Transactional(readOnly = true)
     public List<RaceResponse> getAllRaces() {
@@ -45,6 +47,12 @@ public class RaceQueryService {
     @Transactional
     public void deleteRace(UUID id) {
         raceRepository.findById(id).ifPresent(race -> {
+            // Delete all applications associated with this race
+            var applications = applicationRepository.findByRaceId(id);
+            if (!applications.isEmpty()) {
+                applicationRepository.deleteAll(applications);
+                log.info("Deleted {} applications associated with race (read-side): {}", applications.size(), id);
+            }
             raceRepository.delete(race);
             log.info("Race deleted (read-side): {}", id);
         });

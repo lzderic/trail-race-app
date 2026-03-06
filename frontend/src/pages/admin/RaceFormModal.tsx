@@ -32,7 +32,10 @@ export function RaceFormModal({ race, onClose }: Props) {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     const errs = validate()
-    if (Object.keys(errs).length > 0) { setFieldErrors(errs); return }
+    if (Object.keys(errs).length > 0) {
+      setFieldErrors(errs)
+      return
+    }
     setFieldErrors({})
     setLoading(true)
 
@@ -55,7 +58,9 @@ export function RaceFormModal({ race, onClose }: Props) {
       <div className="modal" onClick={(e) => e.stopPropagation()} role="dialog" aria-modal="true">
         <div className="modal-header">
           <h2 className="modal-title">{isEdit ? 'Edit Race' : 'New Race'}</h2>
-          <button className="modal-close" onClick={onClose} aria-label="Close">×</button>
+          <button className="modal-close" onClick={onClose} aria-label="Close">
+            ×
+          </button>
         </div>
 
         {success && <Alert message={isEdit ? 'Race updated!' : 'Race created!'} type="success" />}
@@ -64,7 +69,9 @@ export function RaceFormModal({ race, onClose }: Props) {
         {!success && (
           <form onSubmit={handleSubmit} noValidate>
             <div className="form-group">
-              <label className="form-label" htmlFor="race-name">Race Name *</label>
+              <label className="form-label" htmlFor="race-name">
+                Race Name *
+              </label>
               <input
                 id="race-name"
                 className={`form-control${fieldErrors.name ? ' error' : ''}`}
@@ -78,7 +85,9 @@ export function RaceFormModal({ race, onClose }: Props) {
             </div>
 
             <div className="form-group">
-              <label className="form-label" htmlFor="race-distance">Distance *</label>
+              <label className="form-label" htmlFor="race-distance">
+                Distance *
+              </label>
               <select
                 id="race-distance"
                 className="form-control"
@@ -86,7 +95,9 @@ export function RaceFormModal({ race, onClose }: Props) {
                 onChange={(e) => setDistance(e.target.value as Distance)}
               >
                 {DISTANCE_OPTIONS.map((opt) => (
-                  <option key={opt.value} value={opt.value}>{opt.label}</option>
+                  <option key={opt.value} value={opt.value}>
+                    {opt.label}
+                  </option>
                 ))}
               </select>
             </div>
@@ -105,4 +116,3 @@ export function RaceFormModal({ race, onClose }: Props) {
     </div>
   )
 }
-

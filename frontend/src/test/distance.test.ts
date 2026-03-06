@@ -24,4 +24,3 @@ describe('distance utils', () => {
     expect(unique.size).toBe(distances.length)
   })
 })
-

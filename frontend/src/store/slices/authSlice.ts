@@ -10,7 +10,7 @@ const initialState: AuthState = {
   token: storedToken,
   user: storedUser ? (JSON.parse(storedUser) as User) : null,
   loading: false,
-  error: null
+  error: null,
 }
 
 export const login = createAsyncThunk(
@@ -25,11 +25,11 @@ export const login = createAsyncThunk(
       return { token, user }
     } catch (err: unknown) {
       const message =
-        (err as { response?: { data?: { message?: string } } })?.response?.data
-          ?.message ?? 'Login failed'
+        (err as { response?: { data?: { message?: string } } })?.response?.data?.message ??
+        'Invalid email or password. Please try again.'
       return rejectWithValue(message)
     }
-  }
+  },
 )
 
 const authSlice = createSlice({
@@ -44,7 +44,7 @@ const authSlice = createSlice({
     },
     clearError(state) {
       state.error = null
-    }
+    },
   },
   extraReducers: (builder) => {
     builder
@@ -61,9 +61,8 @@ const authSlice = createSlice({
         state.loading = false
         state.error = action.payload as string
       })
-  }
+  },
 })
 
 export const { logout, clearError } = authSlice.actions
 export default authSlice.reducer
-

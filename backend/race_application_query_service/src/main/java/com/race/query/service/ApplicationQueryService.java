@@ -32,13 +32,14 @@ public class ApplicationQueryService {
     }
 
     @Transactional
-    public void upsertApplication(UUID id, String firstName, String lastName, String club, UUID raceId) {
+    public void upsertApplication(UUID id, String firstName, String lastName, String club, UUID raceId, UUID userId) {
         Application application = applicationRepository.findById(id)
                 .orElse(Application.builder().id(id).build());
         application.setFirstName(firstName);
         application.setLastName(lastName);
         application.setClub(club);
         application.setRaceId(raceId);
+        application.setUserId(userId);
         applicationRepository.save(application);
         log.info("Application upserted (read-side): {}", id);
     }
@@ -52,7 +53,7 @@ public class ApplicationQueryService {
     }
 
     private ApplicationResponse toResponse(Application app) {
-        return new ApplicationResponse(app.getId(), app.getFirstName(), app.getLastName(), app.getClub(), app.getRaceId());
+        return new ApplicationResponse(app.getId(), app.getFirstName(), app.getLastName(), app.getClub(), app.getRaceId(), app.getUserId());
     }
 }
 

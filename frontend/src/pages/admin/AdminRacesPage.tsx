@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useAppDispatch, useAppSelector } from '../../store/hooks'
 import { fetchRaces, deleteRace } from '../../store/slices/racesSlice'
+import { fetchApplications } from '../../store/slices/applicationsSlice'
 import { Spinner } from '../../components/common/Spinner'
 import { Alert } from '../../components/common/Alert'
 import { ConfirmDialog } from '../../components/common/ConfirmDialog'
@@ -25,6 +26,7 @@ export function AdminRacesPage() {
     if (!deleteId) return
     setDeleteLoading(true)
     await dispatch(deleteRace(deleteId))
+    dispatch(fetchApplications()) // refresh applications after race deletion
     setDeleteLoading(false)
     setDeleteId(null)
   }
@@ -64,7 +66,9 @@ export function AdminRacesPage() {
               <tbody>
                 {races.map((race) => (
                   <tr key={race.id}>
-                    <td><strong>{race.name}</strong></td>
+                    <td>
+                      <strong>{race.name}</strong>
+                    </td>
                     <td>
                       <span className={distanceBadgeClass(race.distance)}>
                         {DISTANCE_LABELS[race.distance]}
@@ -94,13 +98,9 @@ export function AdminRacesPage() {
         </div>
       )}
 
-      {showCreate && (
-        <RaceFormModal onClose={() => setShowCreate(false)} />
-      )}
+      {showCreate && <RaceFormModal onClose={() => setShowCreate(false)} />}
 
-      {editRace && (
-        <RaceFormModal race={editRace} onClose={() => setEditRace(null)} />
-      )}
+      {editRace && <RaceFormModal race={editRace} onClose={() => setEditRace(null)} />}
 
       {deleteId && (
         <ConfirmDialog
@@ -114,4 +114,3 @@ export function AdminRacesPage() {
     </>
   )
 }
-

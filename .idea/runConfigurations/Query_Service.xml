@@ -1,13 +1,20 @@
 <component name="ProjectRunConfigurationManager">
   <configuration default="false" name="Query Service" type="SpringBootApplicationConfigurationType" factoryName="Spring Boot">
+    <envs>
+      <env name="DB_URL" value="jdbc:postgresql://localhost:5432/trailrace_query" />
+      <env name="DB_USERNAME" value="trailrace" />
+      <env name="DB_PASSWORD" value="trailrace" />
+      <env name="RABBITMQ_HOST" value="localhost" />
+      <env name="RABBITMQ_PORT" value="5672" />
+      <env name="RABBITMQ_USERNAME" value="guest" />
+      <env name="RABBITMQ_PASSWORD" value="guest" />
+    </envs>
+    <option name="MAIN_CLASS_NAME" value="com.race.query.QueryServiceApplication" />
     <module name="race-application-query-service" />
     <option name="SPRING_BOOT_MAIN_CLASS" value="com.race.query.QueryServiceApplication" />
-    <option name="ACTIVE_PROFILES" value="" />
-    <RunnerSettings RunnerId="Run" />
-    <ConfigurationWrapper RunnerId="Run" />
+    <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/backend/race_application_query_service" />
     <method v="2">
       <option name="Make" enabled="true" />
     </method>
   </configuration>
 </component>
-

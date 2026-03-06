@@ -12,6 +12,7 @@ import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.ProblemDetail;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -43,7 +44,8 @@ public class ApplicationQueryController {
         @ApiResponse(responseCode = "200", description = "Application found",
             content = @Content(schema = @Schema(implementation = ApplicationResponse.class))),
         @ApiResponse(responseCode = "401", description = "Unauthenticated", content = @Content),
-        @ApiResponse(responseCode = "404", description = "Application not found", content = @Content)
+        @ApiResponse(responseCode = "404", description = "Application not found",
+            content = @Content(schema = @Schema(implementation = ProblemDetail.class)))
     })
     @GetMapping("/{id}")
     public ResponseEntity<ApplicationResponse> getApplicationById(

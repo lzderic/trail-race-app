@@ -1,0 +1,53 @@
+# === IDE ===
+# IntelliJ — ignore everything except shared run configurations
+.idea/*
+!.idea/runConfigurations/
+*.iml
+*.iws
+*.ipr
+.vscode/
+
+# === OS ===
+.DS_Store
+Thumbs.db
+
+# === Root-level Node (not part of the project) ===
+/node_modules/
+/package.json
+/package-lock.json
+
+# === Debug / temp output files (from local troubleshooting) ===
+cmd-*.log
+cmd-*.txt
+svc-*.txt
+compile-out.txt
+db-verify.txt
+health-cmd.txt
+port-check.txt
+qry-tables.txt
+users-check.txt
+run-tests.bat
+
+# === Java build output ===
+**/target/
+
+# === Frontend build output ===
+frontend/dist/
+frontend/storybook-static/
+frontend/node_modules/
+
+# === TypeScript build cache ===
+*.tsbuildinfo
+
+# === Compiled vite config artifacts ===
+frontend/vite.config.js
+frontend/vite.config.d.ts
+frontend/vitest.shims.d.ts
+frontend/hex.txt
+
+# === Environment files (keep examples) ===
+.env
+!.env.example
+
+# === Docker data volumes ===
+docker-data/

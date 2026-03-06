@@ -33,7 +33,12 @@ public class AuthService {
         User user = userRepository.findByEmail(request.email())
                 .orElseThrow(() -> new UsernameNotFoundException("User not found"));
 
-        String token = jwtService.generateToken(userDetails, Map.of("role", user.getRole().name()));
+        String token = jwtService.generateToken(userDetails, Map.of(
+                "role", user.getRole().name(),
+                "id", user.getId().toString(),
+                "firstName", user.getFirstName() != null ? user.getFirstName() : "",
+                "lastName", user.getLastName() != null ? user.getLastName() : ""
+        ));
         log.info("User logged in: {}", request.email());
         return new LoginResponse(token);
     }

@@ -44,7 +44,8 @@ public class EventListener {
                     event.payload().firstName(),
                     event.payload().lastName(),
                     event.payload().club(),
-                    event.payload().raceId()
+                    event.payload().raceId(),
+                    event.payload().userId()
             );
         }
     }

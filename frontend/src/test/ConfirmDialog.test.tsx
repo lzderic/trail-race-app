@@ -11,7 +11,7 @@ describe('ConfirmDialog', () => {
         message="Are you sure?"
         onConfirm={() => {}}
         onCancel={() => {}}
-      />
+      />,
     )
     expect(screen.getByText('Delete Race')).toBeInTheDocument()
     expect(screen.getByText('Are you sure?')).toBeInTheDocument()
@@ -19,28 +19,14 @@ describe('ConfirmDialog', () => {
 
   it('calls onConfirm when confirm button clicked', async () => {
     const onConfirm = vi.fn()
-    render(
-      <ConfirmDialog
-        title="Test"
-        message="msg"
-        onConfirm={onConfirm}
-        onCancel={() => {}}
-      />
-    )
+    render(<ConfirmDialog title="Test" message="msg" onConfirm={onConfirm} onCancel={() => {}} />)
     await userEvent.click(screen.getByRole('button', { name: /delete/i }))
     expect(onConfirm).toHaveBeenCalledOnce()
   })
 
   it('calls onCancel when cancel button clicked', async () => {
     const onCancel = vi.fn()
-    render(
-      <ConfirmDialog
-        title="Test"
-        message="msg"
-        onConfirm={() => {}}
-        onCancel={onCancel}
-      />
-    )
+    render(<ConfirmDialog title="Test" message="msg" onConfirm={() => {}} onCancel={onCancel} />)
     await userEvent.click(screen.getByRole('button', { name: /cancel/i }))
     expect(onCancel).toHaveBeenCalledOnce()
   })
@@ -53,11 +39,10 @@ describe('ConfirmDialog', () => {
         onConfirm={() => {}}
         onCancel={() => {}}
         loading={true}
-      />
+      />,
     )
     screen.getAllByRole('button').forEach((btn) => {
       expect(btn).toBeDisabled()
     })
   })
 })
-

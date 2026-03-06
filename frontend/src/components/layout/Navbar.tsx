@@ -25,15 +25,20 @@ export function Navbar() {
 
       {user && (
         <div className="navbar-links">
-          <NavLink to="/" end className={({ isActive }) => isActive ? 'active' : ''}>
+          <NavLink to="/" end className={({ isActive }) => (isActive ? 'active' : '')}>
             Races
           </NavLink>
-          <NavLink to="/applications" className={({ isActive }) => isActive ? 'active' : ''}>
-            My Applications
-          </NavLink>
+          {!isAdmin && (
+            <NavLink to="/applications" className={({ isActive }) => (isActive ? 'active' : '')}>
+              My Applications
+            </NavLink>
+          )}
           {isAdmin && (
-            <NavLink to="/admin/races" className={({ isActive }) => isActive ? 'active' : ''}>
-              Manage Races
+            <NavLink
+              to="/admin/applications"
+              className={({ isActive }) => (isActive ? 'active' : '')}
+            >
+              All Applications
             </NavLink>
           )}
           <span className="navbar-user">
@@ -48,4 +53,3 @@ export function Navbar() {
     </nav>
   )
 }
-

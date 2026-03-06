@@ -19,5 +19,8 @@ public record ApplicationResponse(
         String club,
 
         @Schema(description = "Race UUID this application belongs to", example = "3fa85f64-5717-4562-b3fc-2c963f66afa6")
-        UUID raceId
+        UUID raceId,
+
+        @Schema(description = "User UUID who submitted the application", example = "3fa85f64-5717-4562-b3fc-2c963f66afa6")
+        UUID userId
 ) {}

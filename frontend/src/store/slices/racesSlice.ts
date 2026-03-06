@@ -6,20 +6,17 @@ const initialState: RacesState = {
   items: [],
   loading: false,
   error: null,
-  selectedRace: null
+  selectedRace: null,
 }
 
-export const fetchRaces = createAsyncThunk(
-  'races/fetchAll',
-  async (_, { rejectWithValue }) => {
-    try {
-      const res = await racesApi.getAll()
-      return res.data
-    } catch (err: unknown) {
-      return rejectWithValue(extractMessage(err))
-    }
+export const fetchRaces = createAsyncThunk('races/fetchAll', async (_, { rejectWithValue }) => {
+  try {
+    const res = await racesApi.getAll()
+    return res.data
+  } catch (err: unknown) {
+    return rejectWithValue(extractMessage(err))
   }
-)
+})
 
 export const fetchRaceById = createAsyncThunk(
   'races/fetchById',
@@ -30,7 +27,7 @@ export const fetchRaceById = createAsyncThunk(
     } catch (err: unknown) {
       return rejectWithValue(extractMessage(err))
     }
-  }
+  },
 )
 
 export const createRace = createAsyncThunk(
@@ -42,22 +39,19 @@ export const createRace = createAsyncThunk(
     } catch (err: unknown) {
       return rejectWithValue(extractMessage(err))
     }
-  }
+  },
 )
 
 export const patchRace = createAsyncThunk(
   'races/patch',
-  async (
-    { id, data }: { id: string; data: RacePatchRequest },
-    { rejectWithValue }
-  ) => {
+  async ({ id, data }: { id: string; data: RacePatchRequest }, { rejectWithValue }) => {
     try {
       const res = await racesApi.patch(id, data)
       return res.data
     } catch (err: unknown) {
       return rejectWithValue(extractMessage(err))
     }
-  }
+  },
 )
 
 export const deleteRace = createAsyncThunk(
@@ -69,13 +63,13 @@ export const deleteRace = createAsyncThunk(
     } catch (err: unknown) {
       return rejectWithValue(extractMessage(err))
     }
-  }
+  },
 )
 
 function extractMessage(err: unknown): string {
   return (
-    (err as { response?: { data?: { message?: string } } })?.response?.data
-      ?.message ?? 'An error occurred'
+    (err as { response?: { data?: { message?: string } } })?.response?.data?.message ??
+    'An error occurred'
   )
 }
 
@@ -88,25 +82,35 @@ const racesSlice = createSlice({
     },
     clearSelectedRace(state) {
       state.selectedRace = null
-    }
+    },
   },
   extraReducers: (builder) => {
     builder
       // fetchAll
-      .addCase(fetchRaces.pending, (state) => { state.loading = true; state.error = null })
+      .addCase(fetchRaces.pending, (state) => {
+        state.loading = true
+        state.error = null
+      })
       .addCase(fetchRaces.fulfilled, (state, action) => {
-        state.loading = false; state.items = action.payload
+        state.loading = false
+        state.items = action.payload
       })
       .addCase(fetchRaces.rejected, (state, action) => {
-        state.loading = false; state.error = action.payload as string
+        state.loading = false
+        state.error = action.payload as string
       })
       // fetchById
-      .addCase(fetchRaceById.pending, (state) => { state.loading = true; state.error = null })
+      .addCase(fetchRaceById.pending, (state) => {
+        state.loading = true
+        state.error = null
+      })
       .addCase(fetchRaceById.fulfilled, (state, action) => {
-        state.loading = false; state.selectedRace = action.payload
+        state.loading = false
+        state.selectedRace = action.payload
       })
       .addCase(fetchRaceById.rejected, (state, action) => {
-        state.loading = false; state.error = action.payload as string
+        state.loading = false
+        state.error = action.payload as string
       })
       // create
       .addCase(createRace.fulfilled, (state, action) => {
@@ -119,8 +123,7 @@ const racesSlice = createSlice({
       .addCase(patchRace.fulfilled, (state, action) => {
         const idx = state.items.findIndex((r) => r.id === action.payload.id)
         if (idx !== -1) state.items[idx] = action.payload
-        if (state.selectedRace?.id === action.payload.id)
-          state.selectedRace = action.payload
+        if (state.selectedRace?.id === action.payload.id) state.selectedRace = action.payload
       })
       .addCase(patchRace.rejected, (state, action) => {
         state.error = action.payload as string
@@ -133,9 +136,8 @@ const racesSlice = createSlice({
       .addCase(deleteRace.rejected, (state, action) => {
         state.error = action.payload as string
       })
-  }
+  },
 })
 
 export const { clearRaceError, clearSelectedRace } = racesSlice.actions
 export default racesSlice.reducer
-

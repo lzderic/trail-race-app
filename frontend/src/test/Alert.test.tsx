@@ -29,4 +29,3 @@ describe('Alert component', () => {
     expect(screen.queryByRole('button')).not.toBeInTheDocument()
   })
 })
-

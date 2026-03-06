@@ -11,7 +11,13 @@ export function Alert({ message, type = 'error', onClose }: AlertProps) {
       {onClose && (
         <button
           onClick={onClose}
-          style={{ marginLeft: 'auto', background: 'none', border: 'none', cursor: 'pointer', fontSize: '1rem' }}
+          style={{
+            marginLeft: 'auto',
+            background: 'none',
+            border: 'none',
+            cursor: 'pointer',
+            fontSize: '1rem',
+          }}
           aria-label="Close"
         >
           ×
@@ -20,4 +26,3 @@ export function Alert({ message, type = 'error', onClose }: AlertProps) {
     </div>
   )
 }
-

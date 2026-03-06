@@ -1,0 +1,7 @@
+<component name="ProjectRunConfigurationManager">
+  <configuration default="false" name="All Backend Tests" type="CompoundRunConfigurationType">
+    <toRun name="Command Service Tests" type="MavenRunConfiguration" />
+    <toRun name="Query Service Tests" type="MavenRunConfiguration" />
+    <method v="2" />
+  </configuration>
+</component>

@@ -14,6 +14,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ProblemDetail;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -22,7 +23,7 @@ import java.util.UUID;
 @RestController
 @RequestMapping("/api/applications")
 @RequiredArgsConstructor
-@Tag(name = "Applications (Command)", description = "Create and delete race applications — Administrator only")
+@Tag(name = "Applications (Command)", description = "Create and delete race applications — Administrator or Applicant")
 @SecurityRequirement(name = "bearerAuth")
 public class ApplicationCommandController {
 
@@ -32,10 +33,12 @@ public class ApplicationCommandController {
     @ApiResponses({
         @ApiResponse(responseCode = "201", description = "Application created",
             content = @Content(schema = @Schema(implementation = ApplicationResponse.class))),
-        @ApiResponse(responseCode = "400", description = "Validation error", content = @Content),
+        @ApiResponse(responseCode = "400", description = "Validation error",
+            content = @Content(schema = @Schema(implementation = ProblemDetail.class))),
         @ApiResponse(responseCode = "401", description = "Unauthenticated", content = @Content),
-        @ApiResponse(responseCode = "403", description = "Forbidden — Administrator role required", content = @Content),
-        @ApiResponse(responseCode = "404", description = "Race not found", content = @Content)
+        @ApiResponse(responseCode = "403", description = "Forbidden — Administrator or Applicant role required", content = @Content),
+        @ApiResponse(responseCode = "404", description = "Race not found",
+            content = @Content(schema = @Schema(implementation = ProblemDetail.class)))
     })
     @PostMapping
     public ResponseEntity<ApplicationResponse> createApplication(@Valid @RequestBody ApplicationRequest request) {
@@ -46,8 +49,9 @@ public class ApplicationCommandController {
     @ApiResponses({
         @ApiResponse(responseCode = "204", description = "Application deleted"),
         @ApiResponse(responseCode = "401", description = "Unauthenticated", content = @Content),
-        @ApiResponse(responseCode = "403", description = "Forbidden — Administrator role required", content = @Content),
-        @ApiResponse(responseCode = "404", description = "Application not found", content = @Content)
+        @ApiResponse(responseCode = "403", description = "Forbidden — Administrator or Applicant role required", content = @Content),
+        @ApiResponse(responseCode = "404", description = "Application not found",
+            content = @Content(schema = @Schema(implementation = ProblemDetail.class)))
     })
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteApplication(

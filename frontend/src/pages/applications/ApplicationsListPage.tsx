@@ -13,6 +13,12 @@ export function ApplicationsListPage() {
   const { items: races } = useAppSelector((s) => s.races)
   const user = useAppSelector((s) => s.auth.user)
 
+  // Applicants see only their own applications; Admins see all
+  const isAdmin = user?.role === 'Administrator'
+  const visibleApplications = isAdmin
+    ? applications
+    : applications.filter((app) => app.userId === user?.id)
+
   const [deleteId, setDeleteId] = useState<string | null>(null)
   const [deleteLoading, setDeleteLoading] = useState(false)
 
@@ -22,9 +28,6 @@ export function ApplicationsListPage() {
   }, [dispatch])
 
   const getRace = (raceId: string) => races.find((r) => r.id === raceId)
-
-  // Applicants only see their own — for now all are shown (backend filters by role if needed)
-  const isAdmin = user?.role === 'Administrator'
 
   const handleDelete = async () => {
     if (!deleteId) return
@@ -37,16 +40,14 @@ export function ApplicationsListPage() {
   return (
     <>
       <div className="page-header">
-        <h1 className="page-title">
-          {isAdmin ? 'All Applications' : 'My Applications'}
-        </h1>
+        <h1 className="page-title">My Applications</h1>
       </div>
 
       {error && <Alert message={error} />}
 
       {loading ? (
         <Spinner />
-      ) : applications.length === 0 ? (
+      ) : visibleApplications.length === 0 ? (
         <div className="empty-state">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
             <rect x="3" y="4" width="18" height="18" rx="2" />
@@ -69,19 +70,29 @@ export function ApplicationsListPage() {
                 </tr>
               </thead>
               <tbody>
-                {applications.map((app) => {
+                {visibleApplications.map((app) => {
                   const race = getRace(app.raceId)
                   return (
                     <tr key={app.id}>
-                      <td>{app.firstName} {app.lastName}</td>
+                      <td>
+                        {app.firstName} {app.lastName}
+                      </td>
                       <td>{app.club ?? <span style={{ color: 'var(--text-muted)' }}>—</span>}</td>
-                      <td>{race?.name ?? app.raceId}</td>
+                      <td>
+                        {race?.name ?? (
+                          <span style={{ color: 'var(--text-muted)', fontStyle: 'italic' }}>
+                            Deleted Race
+                          </span>
+                        )}
+                      </td>
                       <td>
                         {race ? (
                           <span className={distanceBadgeClass(race.distance)}>
                             {DISTANCE_LABELS[race.distance]}
                           </span>
-                        ) : '—'}
+                        ) : (
+                          <span style={{ color: 'var(--text-muted)' }}>—</span>
+                        )}
                       </td>
                       <td>
                         <button
@@ -112,4 +123,3 @@ export function ApplicationsListPage() {
     </>
   )
 }
-

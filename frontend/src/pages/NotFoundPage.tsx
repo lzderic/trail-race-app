@@ -9,10 +9,13 @@ export function NotFoundPage() {
       </svg>
       <h3 style={{ fontSize: '2rem' }}>404</h3>
       <p>Page not found.</p>
-      <Link to="/" className="btn btn-primary" style={{ marginTop: '1rem', display: 'inline-flex' }}>
+      <Link
+        to="/"
+        className="btn btn-primary"
+        style={{ marginTop: '1rem', display: 'inline-flex' }}
+      >
         Go Home
       </Link>
     </div>
   )
 }
-

@@ -14,7 +14,7 @@ describe('jwtDecode', () => {
       id: 'abc-123',
       firstName: 'Admin',
       lastName: 'User',
-      role: 'Administrator'
+      role: 'Administrator',
     })
     const user = jwtDecode(token)
     expect(user.email).toBe('admin@test.com')
@@ -38,4 +38,3 @@ describe('jwtDecode', () => {
     expect(() => jwtDecode('not.a.valid.jwt.token')).toThrow()
   })
 })
-

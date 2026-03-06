@@ -12,7 +12,7 @@ import com.race.command.service.RaceCommandService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
 import org.springframework.security.core.userdetails.UserDetailsService;
@@ -34,7 +34,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @Import({SecurityConfig.class, JwtAuthFilter.class, JwtService.class})
 @TestPropertySource(properties = {
     "jwt.secret=test-secret-key-that-is-at-least-256-bits-long-for-testing",
-    "jwt.expiration-ms=3600000"
+    "jwt.expiration-ms=3600000",
+    "cors.allowed-origins=http://localhost:3000"
 })
 class RaceCommandControllerTest {
 
@@ -44,10 +45,10 @@ class RaceCommandControllerTest {
     @Autowired
     private ObjectMapper objectMapper;
 
-    @MockBean
+    @MockitoBean
     private RaceCommandService raceCommandService;
 
-    @MockBean
+    @MockitoBean
     private UserDetailsService userDetailsService;
 
     @Test
@@ -63,7 +64,7 @@ class RaceCommandControllerTest {
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.name").value("Mountain Trail"))
-                .andExpect(jsonPath("$.distance").value("MARATHON"));
+                .andExpect(jsonPath("$.distance").value("Marathon"));
     }
 
     @Test

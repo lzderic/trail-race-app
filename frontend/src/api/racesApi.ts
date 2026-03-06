@@ -6,8 +6,6 @@ export const racesApi = {
   getAll: () => queryApi.get<Race[]>('/api/races'),
   getById: (id: string) => queryApi.get<Race>(`/api/races/${id}`),
   create: (data: RaceRequest) => commandApi.post<Race>('/api/races', data),
-  patch: (id: string, data: RacePatchRequest) =>
-    commandApi.patch<Race>(`/api/races/${id}`, data),
-  delete: (id: string) => commandApi.delete(`/api/races/${id}`)
+  patch: (id: string, data: RacePatchRequest) => commandApi.patch<Race>(`/api/races/${id}`, data),
+  delete: (id: string) => commandApi.delete(`/api/races/${id}`),
 }
-

@@ -4,6 +4,7 @@ import com.race.query.dto.RaceResponse;
 import com.race.query.entity.Race;
 import com.race.query.enums.Distance;
 import com.race.query.exception.ResourceNotFoundException;
+import com.race.query.repository.ApplicationRepository;
 import com.race.query.repository.RaceRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -13,6 +14,7 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -27,6 +29,9 @@ class RaceQueryServiceTest {
 
     @Mock
     private RaceRepository raceRepository;
+
+    @Mock
+    private ApplicationRepository applicationRepository;
 
     @InjectMocks
     private RaceQueryService raceQueryService;
@@ -87,6 +92,7 @@ class RaceQueryServiceTest {
     @Test
     void deleteRace_whenExists_shouldDelete() {
         when(raceRepository.findById(race.getId())).thenReturn(Optional.of(race));
+        when(applicationRepository.findByRaceId(race.getId())).thenReturn(Collections.emptyList());
 
         raceQueryService.deleteRace(race.getId());
 

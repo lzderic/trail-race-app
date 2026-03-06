@@ -13,6 +13,7 @@ export interface Application {
   lastName: string
   club?: string
   raceId: string
+  userId?: string
 }
 
 export interface User {
@@ -65,4 +66,3 @@ export interface ApplicationRequest {
   club?: string
   raceId: string
 }
-

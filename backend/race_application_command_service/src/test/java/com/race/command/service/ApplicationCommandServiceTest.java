@@ -4,13 +4,17 @@ import com.race.command.dto.ApplicationRequest;
 import com.race.command.dto.ApplicationResponse;
 import com.race.command.entity.Application;
 import com.race.command.entity.Race;
+import com.race.command.entity.User;
 import com.race.command.enums.Distance;
+import com.race.command.enums.Role;
 import com.race.command.event.ApplicationEvent;
 import com.race.command.event.EventType;
 import com.race.command.exception.ResourceNotFoundException;
 import com.race.command.publisher.EventPublisher;
 import com.race.command.repository.ApplicationRepository;
 import com.race.command.repository.RaceRepository;
+import com.race.command.repository.UserRepository;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -18,6 +22,8 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.context.SecurityContextHolder;
 
 import java.util.Optional;
 import java.util.UUID;
@@ -37,22 +43,37 @@ class ApplicationCommandServiceTest {
     private RaceRepository raceRepository;
 
     @Mock
+    private UserRepository userRepository;
+
+    @Mock
     private EventPublisher eventPublisher;
 
     @InjectMocks
     private ApplicationCommandService applicationCommandService;
 
     private UUID raceId;
+    private UUID userId;
     private Race existingRace;
+    private User existingUser;
     private Application existingApplication;
 
     @BeforeEach
     void setUp() {
         raceId = UUID.randomUUID();
+        userId = UUID.randomUUID();
         existingRace = Race.builder()
                 .id(raceId)
                 .name("Forest Run")
                 .distance(Distance.HALF_MARATHON)
+                .build();
+
+        existingUser = User.builder()
+                .id(userId)
+                .email("test@example.com")
+                .firstName("John")
+                .lastName("Doe")
+                .role(Role.APPLICANT)
+                .password("encoded")
                 .build();
 
         existingApplication = Application.builder()
@@ -61,12 +82,23 @@ class ApplicationCommandServiceTest {
                 .lastName("Doe")
                 .club("Runner Club")
                 .raceId(raceId)
+                .userId(userId)
                 .build();
+
+        // Set up SecurityContext for createApplication
+        SecurityContextHolder.getContext().setAuthentication(
+                new UsernamePasswordAuthenticationToken("test@example.com", null));
+    }
+
+    @AfterEach
+    void tearDown() {
+        SecurityContextHolder.clearContext();
     }
 
     @Test
     void createApplication_shouldSaveAndPublishEvent() {
         when(raceRepository.findById(raceId)).thenReturn(Optional.of(existingRace));
+        when(userRepository.findByEmail("test@example.com")).thenReturn(Optional.of(existingUser));
         when(applicationRepository.save(any(Application.class))).thenAnswer(inv -> inv.getArgument(0));
 
         ApplicationRequest request = new ApplicationRequest("John", "Doe", "Runner Club", raceId);
@@ -74,6 +106,7 @@ class ApplicationCommandServiceTest {
 
         assertThat(response.firstName()).isEqualTo("John");
         assertThat(response.raceId()).isEqualTo(raceId);
+        assertThat(response.userId()).isEqualTo(userId);
 
         ArgumentCaptor<ApplicationEvent> captor = ArgumentCaptor.forClass(ApplicationEvent.class);
         verify(eventPublisher).publishApplicationEvent(captor.capture());

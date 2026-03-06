@@ -1,23 +1,30 @@
 {
   "info": {
-    "_postman_id": "trail-race-app-collection-v1",
+    "_postman_id": "trail-race-app-collection-v2",
     "name": "Trail Race App",
-    "description": "Full API collection for the Trail Race CQRS backend.\n\nHow to use:\n1. Import this file into Postman (File -> Import)\n2. Set command_url and query_url variables if needed\n3. Run Login as Administrator first - jwt_token is set automatically\n4. All other requests pick up the token automatically\n\nDefault base URLs:\n- Command Service: http://localhost:8081\n- Query Service: http://localhost:8082",
+    "description": "Full API collection for the Trail Race CQRS backend.\n\n## Quick Start\n1. Import this file into Postman (File → Import)\n2. Run **Login as Administrator** first — `jwt_token` is set automatically\n3. All other requests inherit the Bearer token from the collection auth\n\n## Seed Credentials\n| Email | Password | Role |\n|---|---|---|\n| admin@trailrace.com | admin123 | ADMINISTRATOR |\n| jane@example.com | applicant123 | APPLICANT |\n| marco@example.com | applicant123 | APPLICANT |\n| lena@example.com | applicant123 | APPLICANT |\n\n## Seed Races\n6 sample races are pre-loaded: Mountain Trail 5K, Forest Loop 10K, Coastal Half Marathon, Alpine Marathon, City Park 5K, River Valley 10K.\n\n## Base URLs (configurable via variables)\n- Command Service: `http://localhost:8081`\n- Query Service: `http://localhost:8082`\n\n## Recommended Execution Order\n1. Health checks → 2. Login → 3. Create Race → 4. Create Application → 5. Query reads → 6. Update → 7. Error scenarios → 8. Delete\n\n> **CQRS note:** After a write (command service), the query service may take a few hundred milliseconds to process the RabbitMQ event. If a GET returns stale data, wait briefly and retry.",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "variable": [
     {
       "key": "command_url",
-      "value": "http://localhost:8081"
+      "value": "http://localhost:8081",
+      "description": "Command service base URL"
     },
     {
       "key": "query_url",
-      "value": "http://localhost:8082"
+      "value": "http://localhost:8082",
+      "description": "Query service base URL"
     },
     {
       "key": "jwt_token",
       "value": "",
       "description": "Auto-populated after running a Login request"
+    },
+    {
+      "key": "jwt_token_applicant",
+      "value": "",
+      "description": "Auto-populated after Login as Applicant"
     },
     {
       "key": "race_id",
@@ -43,46 +50,63 @@
   "item": [
     {
       "name": "Health & Info",
+      "description": "Unauthenticated health and info endpoints. Run these first to verify both services are up.",
       "item": [
         {
-          "name": "Health - Command Service",
+          "name": "Health — Command Service",
           "event": [
             {
               "listen": "test",
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "pm.test('Status 200', function () { pm.response.to.have.status(200); });",
+                  "pm.test('Status 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
                   "pm.test('Service is UP', function () {",
                   "    var json = pm.response.json();",
                   "    pm.expect(json.status).to.eql('UP');",
+                  "});",
+                  "pm.test('DB component is UP', function () {",
+                  "    var json = pm.response.json();",
+                  "    pm.expect(json.components.db.status).to.eql('UP');",
+                  "});",
+                  "pm.test('RabbitMQ component is UP', function () {",
+                  "    var json = pm.response.json();",
+                  "    pm.expect(json.components.rabbit.status).to.eql('UP');",
                   "});"
                 ]
               }
             }
           ],
           "request": {
-            "auth": {
-              "type": "noauth"
-            },
+            "auth": { "type": "noauth" },
             "method": "GET",
             "header": [],
             "url": {
               "raw": "{{command_url}}/actuator/health",
-              "host": [
-                "{{command_url}}"
-              ],
-              "path": [
-                "actuator",
-                "health"
-              ]
+              "host": ["{{command_url}}"],
+              "path": ["actuator", "health"]
             },
-            "description": "Returns health status of the command service. No auth required."
+            "description": "Returns health status of the command service including DB and RabbitMQ components. No auth required."
           },
-          "response": []
+          "response": [
+            {
+              "name": "200 — Service Healthy",
+              "originalRequest": {
+                "method": "GET",
+                "url": { "raw": "{{command_url}}/actuator/health", "host": ["{{command_url}}"], "path": ["actuator", "health"] }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n  \"status\": \"UP\",\n  \"components\": {\n    \"db\": { \"status\": \"UP\", \"details\": { \"database\": \"PostgreSQL\" } },\n    \"diskSpace\": { \"status\": \"UP\" },\n    \"rabbit\": { \"status\": \"UP\" }\n  }\n}"
+            }
+          ]
         },
         {
-          "name": "Health - Query Service",
+          "name": "Health — Query Service",
           "event": [
             {
               "listen": "test",
@@ -91,35 +115,27 @@
                 "exec": [
                   "pm.test('Status 200', function () { pm.response.to.have.status(200); });",
                   "pm.test('Service is UP', function () {",
-                  "    var json = pm.response.json();",
-                  "    pm.expect(json.status).to.eql('UP');",
+                  "    pm.expect(pm.response.json().status).to.eql('UP');",
                   "});"
                 ]
               }
             }
           ],
           "request": {
-            "auth": {
-              "type": "noauth"
-            },
+            "auth": { "type": "noauth" },
             "method": "GET",
             "header": [],
             "url": {
               "raw": "{{query_url}}/actuator/health",
-              "host": [
-                "{{query_url}}"
-              ],
-              "path": [
-                "actuator",
-                "health"
-              ]
+              "host": ["{{query_url}}"],
+              "path": ["actuator", "health"]
             },
             "description": "Returns health status of the query service. No auth required."
           },
           "response": []
         },
         {
-          "name": "Info - Command Service",
+          "name": "Info — Command Service",
           "event": [
             {
               "listen": "test",
@@ -132,27 +148,20 @@
             }
           ],
           "request": {
-            "auth": {
-              "type": "noauth"
-            },
+            "auth": { "type": "noauth" },
             "method": "GET",
             "header": [],
             "url": {
               "raw": "{{command_url}}/actuator/info",
-              "host": [
-                "{{command_url}}"
-              ],
-              "path": [
-                "actuator",
-                "info"
-              ]
+              "host": ["{{command_url}}"],
+              "path": ["actuator", "info"]
             },
             "description": "Returns app name, version and description. No auth required."
           },
           "response": []
         },
         {
-          "name": "Info - Query Service",
+          "name": "Info — Query Service",
           "event": [
             {
               "listen": "test",
@@ -165,20 +174,13 @@
             }
           ],
           "request": {
-            "auth": {
-              "type": "noauth"
-            },
+            "auth": { "type": "noauth" },
             "method": "GET",
             "header": [],
             "url": {
               "raw": "{{query_url}}/actuator/info",
-              "host": [
-                "{{query_url}}"
-              ],
-              "path": [
-                "actuator",
-                "info"
-              ]
+              "host": ["{{query_url}}"],
+              "path": ["actuator", "info"]
             },
             "description": "Returns app name, version and description. No auth required."
           },
@@ -188,6 +190,7 @@
     },
     {
       "name": "Auth",
+      "description": "Authentication endpoints. Run a Login request first to populate `jwt_token`. Subsequent requests inherit the token automatically.",
       "item": [
         {
           "name": "Login as Administrator (Command)",
@@ -198,47 +201,86 @@
                 "type": "text/javascript",
                 "exec": [
                   "pm.test('Status 200', function () { pm.response.to.have.status(200); });",
+                  "pm.test('Response contains token', function () {",
+                  "    var json = pm.response.json();",
+                  "    pm.expect(json).to.have.property('token');",
+                  "    pm.expect(json.token).to.be.a('string').and.not.empty;",
+                  "});",
                   "var json = pm.response.json();",
                   "if (json.token) {",
                   "    pm.collectionVariables.set('jwt_token', json.token);",
-                  "    console.log('jwt_token saved');",
+                  "    console.log('jwt_token saved (admin)');",
                   "}"
                 ]
               }
             }
           ],
           "request": {
-            "auth": {
-              "type": "noauth"
-            },
+            "auth": { "type": "noauth" },
             "method": "POST",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
             "body": {
               "mode": "raw",
               "raw": "{\n  \"email\": \"admin@trailrace.com\",\n  \"password\": \"admin123\"\n}",
-              "options": {
-                "raw": {
-                  "language": "json"
-                }
-              }
+              "options": { "raw": { "language": "json" } }
             },
             "url": {
               "raw": "{{command_url}}/api/auth/login",
-              "host": [
-                "{{command_url}}"
-              ],
-              "path": [
-                "api",
-                "auth",
-                "login"
-              ]
+              "host": ["{{command_url}}"],
+              "path": ["api", "auth", "login"]
             },
-            "description": "Login as Administrator. Saves jwt_token automatically."
+            "description": "Login as Administrator via the command service. Saves `jwt_token` automatically.\n\nCredentials: `admin@trailrace.com` / `admin123`"
+          },
+          "response": [
+            {
+              "name": "200 — Login Successful",
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n  \"token\": \"eyJhbGciOiJIUzI1NiJ9...\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Login as Applicant (Command)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 200', function () { pm.response.to.have.status(200); });",
+                  "pm.test('Response contains token', function () {",
+                  "    var json = pm.response.json();",
+                  "    pm.expect(json).to.have.property('token');",
+                  "    pm.expect(json.token).to.be.a('string').and.not.empty;",
+                  "});",
+                  "var json = pm.response.json();",
+                  "if (json.token) {",
+                  "    pm.collectionVariables.set('jwt_token', json.token);",
+                  "    pm.collectionVariables.set('jwt_token_applicant', json.token);",
+                  "    console.log('jwt_token saved (applicant via command)');",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"jane@example.com\",\n  \"password\": \"applicant123\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{command_url}}/api/auth/login",
+              "host": ["{{command_url}}"],
+              "path": ["api", "auth", "login"]
+            },
+            "description": "Login as Applicant via the command service. Saves `jwt_token` (overwriting any previous value) and `jwt_token_applicant`.\n\nCredentials: `jane@example.com` / `applicant123`"
           },
           "response": []
         },
@@ -251,54 +293,85 @@
                 "type": "text/javascript",
                 "exec": [
                   "pm.test('Status 200', function () { pm.response.to.have.status(200); });",
+                  "pm.test('Response contains token', function () {",
+                  "    var json = pm.response.json();",
+                  "    pm.expect(json).to.have.property('token');",
+                  "});",
                   "var json = pm.response.json();",
                   "if (json.token) {",
                   "    pm.collectionVariables.set('jwt_token', json.token);",
-                  "    console.log('jwt_token saved');",
+                  "    pm.collectionVariables.set('jwt_token_applicant', json.token);",
+                  "    console.log('jwt_token saved (applicant via query)');",
                   "}"
                 ]
               }
             }
           ],
           "request": {
-            "auth": {
-              "type": "noauth"
-            },
+            "auth": { "type": "noauth" },
             "method": "POST",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"email\": \"jane@example.com\",\n  \"password\": \"password\"\n}",
-              "options": {
-                "raw": {
-                  "language": "json"
-                }
-              }
+              "raw": "{\n  \"email\": \"jane@example.com\",\n  \"password\": \"applicant123\"\n}",
+              "options": { "raw": { "language": "json" } }
             },
             "url": {
               "raw": "{{query_url}}/api/auth/login",
-              "host": [
-                "{{query_url}}"
-              ],
-              "path": [
-                "api",
-                "auth",
-                "login"
-              ]
+              "host": ["{{query_url}}"],
+              "path": ["api", "auth", "login"]
             },
-            "description": "Login as Applicant. Saves jwt_token automatically."
+            "description": "Login as Applicant via the query service. Saves `jwt_token` and `jwt_token_applicant`.\n\nCredentials: `jane@example.com` / `applicant123`"
           },
           "response": []
+        },
+        {
+          "name": "Login — Invalid Credentials (401)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 401', function () {",
+                  "    pm.response.to.have.status(401);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"admin@trailrace.com\",\n  \"password\": \"wrongpassword\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{command_url}}/api/auth/login",
+              "host": ["{{command_url}}"],
+              "path": ["api", "auth", "login"]
+            },
+            "description": "Negative test: login with wrong password. Expects 401 Unauthorized."
+          },
+          "response": [
+            {
+              "name": "401 — Invalid Credentials",
+              "status": "Unauthorized",
+              "code": 401,
+              "_postman_previewlanguage": "text",
+              "header": [{ "key": "Content-Type", "value": "text/plain" }],
+              "body": "Invalid email or password"
+            }
+          ]
         }
       ]
     },
     {
-      "name": "Races - Command (port 8081)",
+      "name": "Races — Command (port 8081)",
+      "description": "Mutating operations on Races. Requires **Administrator** role.\n\nRun **Login as Administrator** first.",
       "item": [
         {
           "name": "Create Race",
@@ -308,7 +381,16 @@
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "pm.test('Status 201', function () { pm.response.to.have.status(201); });",
+                  "pm.test('Status 201 Created', function () { pm.response.to.have.status(201); });",
+                  "pm.test('Response has id, name, distance', function () {",
+                  "    var json = pm.response.json();",
+                  "    pm.expect(json).to.have.property('id');",
+                  "    pm.expect(json).to.have.property('name');",
+                  "    pm.expect(json).to.have.property('distance');",
+                  "});",
+                  "pm.test('Name matches request', function () {",
+                  "    pm.expect(pm.response.json().name).to.eql('Mountain Classic');",
+                  "});",
                   "var json = pm.response.json();",
                   "if (json.id) {",
                   "    pm.collectionVariables.set('race_id', json.id);",
@@ -320,34 +402,72 @@
           ],
           "request": {
             "method": "POST",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
             "body": {
               "mode": "raw",
               "raw": "{\n  \"name\": \"Mountain Classic\",\n  \"distance\": \"MARATHON\"\n}",
-              "options": {
-                "raw": {
-                  "language": "json"
-                }
-              }
+              "options": { "raw": { "language": "json" } }
             },
             "url": {
               "raw": "{{command_url}}/api/races",
-              "host": [
-                "{{command_url}}"
-              ],
-              "path": [
-                "api",
-                "races"
-              ]
+              "host": ["{{command_url}}"],
+              "path": ["api", "races"]
             },
-            "description": "Creates a race. Distance: FIVE_K | TEN_K | HALF_MARATHON | MARATHON. Saves race_id automatically."
+            "description": "Creates a race. Saves `race_id` automatically.\n\nDistance values: `FIVE_K` | `TEN_K` | `HALF_MARATHON` | `MARATHON`"
           },
-          "response": []
+          "response": [
+            {
+              "name": "201 — Race Created",
+              "status": "Created",
+              "code": 201,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n  \"id\": \"3fa85f64-5717-4562-b3fc-2c963f66afa6\",\n  \"name\": \"Mountain Classic\",\n  \"distance\": \"MARATHON\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Create Race — Validation Error (400)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 400 Bad Request', function () { pm.response.to.have.status(400); });",
+                  "pm.test('Response contains error details', function () {",
+                  "    var json = pm.response.json();",
+                  "    pm.expect(json).to.have.property('detail');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"\",\n  \"distance\": null\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{command_url}}/api/races",
+              "host": ["{{command_url}}"],
+              "path": ["api", "races"]
+            },
+            "description": "Negative test: empty name and null distance. Expects 400 with ProblemDetail response."
+          },
+          "response": [
+            {
+              "name": "400 — Validation Error",
+              "status": "Bad Request",
+              "code": 400,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/problem+json" }],
+              "body": "{\n  \"type\": \"about:blank\",\n  \"title\": \"Bad Request\",\n  \"status\": 400,\n  \"detail\": \"Validation failed\",\n  \"errors\": {\n    \"name\": \"must not be blank\",\n    \"distance\": \"must not be null\"\n  }\n}"
+            }
+          ]
         },
         {
           "name": "Update Race (PATCH)",
@@ -357,40 +477,73 @@
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "pm.test('Status 200', function () { pm.response.to.have.status(200); });"
+                  "pm.test('Status 200', function () { pm.response.to.have.status(200); });",
+                  "pm.test('Name was updated', function () {",
+                  "    pm.expect(pm.response.json().name).to.eql('Mountain Classic 2026');",
+                  "});",
+                  "pm.test('Distance was updated', function () {",
+                  "    pm.expect(pm.response.json().distance).to.eql('HALF_MARATHON');",
+                  "});"
                 ]
               }
             }
           ],
           "request": {
             "method": "PATCH",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
             "body": {
               "mode": "raw",
               "raw": "{\n  \"name\": \"Mountain Classic 2026\",\n  \"distance\": \"HALF_MARATHON\"\n}",
-              "options": {
-                "raw": {
-                  "language": "json"
-                }
-              }
+              "options": { "raw": { "language": "json" } }
             },
             "url": {
               "raw": "{{command_url}}/api/races/{{race_id}}",
-              "host": [
-                "{{command_url}}"
-              ],
-              "path": [
-                "api",
-                "races",
-                "{{race_id}}"
-              ]
+              "host": ["{{command_url}}"],
+              "path": ["api", "races", "{{race_id}}"]
             },
-            "description": "Partially updates a race. All fields are optional."
+            "description": "Partially updates a race. All fields are optional — only provided fields are changed."
+          },
+          "response": [
+            {
+              "name": "200 — Race Updated",
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n  \"id\": \"3fa85f64-5717-4562-b3fc-2c963f66afa6\",\n  \"name\": \"Mountain Classic 2026\",\n  \"distance\": \"HALF_MARATHON\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Update Race — Partial (name only)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 200', function () { pm.response.to.have.status(200); });",
+                  "pm.test('Name was updated', function () {",
+                  "    pm.expect(pm.response.json().name).to.eql('Coastal Trail');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Coastal Trail\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{command_url}}/api/races/{{race_id}}",
+              "host": ["{{command_url}}"],
+              "path": ["api", "races", "{{race_id}}"]
+            },
+            "description": "Demonstrates partial update — only the name is changed, distance is left as-is."
           },
           "response": []
         },
@@ -402,7 +555,10 @@
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "pm.test('Status 204', function () { pm.response.to.have.status(204); });"
+                  "pm.test('Status 204 No Content', function () { pm.response.to.have.status(204); });",
+                  "pm.test('Response body is empty', function () {",
+                  "    pm.expect(pm.response.text()).to.be.empty;",
+                  "});"
                 ]
               }
             }
@@ -412,33 +568,121 @@
             "header": [],
             "url": {
               "raw": "{{command_url}}/api/races/{{race_id}}",
-              "host": [
-                "{{command_url}}"
-              ],
-              "path": [
-                "api",
-                "races",
-                "{{race_id}}"
-              ]
+              "host": ["{{command_url}}"],
+              "path": ["api", "races", "{{race_id}}"]
             },
-            "description": "Deletes a race by ID."
+            "description": "Deletes a race by ID. Returns 204 No Content."
           },
-          "response": []
-        }
-      ]
-    },
-    {
-      "name": "Applications - Command (port 8081)",
-      "item": [
+          "response": [
+            {
+              "name": "204 — Race Deleted",
+              "status": "No Content",
+              "code": 204,
+              "_postman_previewlanguage": "text",
+              "header": [],
+              "body": ""
+            }
+          ]
+        },
         {
-          "name": "Create Application",
+          "name": "Delete Race — Not Found (404)",
           "event": [
             {
               "listen": "test",
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "pm.test('Status 201', function () { pm.response.to.have.status(201); });",
+                  "pm.test('Status 404', function () { pm.response.to.have.status(404); });",
+                  "pm.test('Response is ProblemDetail', function () {",
+                  "    var json = pm.response.json();",
+                  "    pm.expect(json).to.have.property('status', 404);",
+                  "    pm.expect(json).to.have.property('detail');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{command_url}}/api/races/00000000-0000-0000-0000-000000000000",
+              "host": ["{{command_url}}"],
+              "path": ["api", "races", "00000000-0000-0000-0000-000000000000"]
+            },
+            "description": "Negative test: delete a race that does not exist. Expects 404 with RFC 7807 ProblemDetail."
+          },
+          "response": [
+            {
+              "name": "404 — Not Found",
+              "status": "Not Found",
+              "code": 404,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/problem+json" }],
+              "body": "{\n  \"type\": \"about:blank\",\n  \"title\": \"Not Found\",\n  \"status\": 404,\n  \"detail\": \"Race not found with id: 00000000-0000-0000-0000-000000000000\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Create Race — Forbidden as Applicant (403)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 403 Forbidden', function () { pm.response.to.have.status(403); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [{ "key": "token", "value": "{{jwt_token_applicant}}", "type": "string" }]
+            },
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Should Fail\",\n  \"distance\": \"FIVE_K\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{command_url}}/api/races",
+              "host": ["{{command_url}}"],
+              "path": ["api", "races"]
+            },
+            "description": "Negative test: Applicant tries to create a race. Expects 403.\n\n**Pre-requisite:** Run *Login as Applicant (Command)* first to populate `jwt_token_applicant`."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Applications — Command (port 8081)",
+      "description": "Mutating operations on Applications. Accessible to both **Administrator** and **Applicant** roles.",
+      "item": [
+        {
+          "name": "Create Application (as Admin)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 201 Created', function () { pm.response.to.have.status(201); });",
+                  "pm.test('Response has required fields', function () {",
+                  "    var json = pm.response.json();",
+                  "    pm.expect(json).to.have.property('id');",
+                  "    pm.expect(json).to.have.property('firstName', 'John');",
+                  "    pm.expect(json).to.have.property('lastName', 'Doe');",
+                  "    pm.expect(json).to.have.property('raceId');",
+                  "    pm.expect(json).to.have.property('userId');",
+                  "});",
+                  "pm.test('Club is present', function () {",
+                  "    pm.expect(pm.response.json().club).to.eql('Trail Blazers');",
+                  "});",
                   "var json = pm.response.json();",
                   "if (json.id) {",
                   "    pm.collectionVariables.set('application_id', json.id);",
@@ -450,32 +694,149 @@
           ],
           "request": {
             "method": "POST",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
             "body": {
               "mode": "raw",
               "raw": "{\n  \"firstName\": \"John\",\n  \"lastName\": \"Doe\",\n  \"club\": \"Trail Blazers\",\n  \"raceId\": \"{{race_id}}\"\n}",
-              "options": {
-                "raw": {
-                  "language": "json"
-                }
-              }
+              "options": { "raw": { "language": "json" } }
             },
             "url": {
               "raw": "{{command_url}}/api/applications",
-              "host": [
-                "{{command_url}}"
-              ],
-              "path": [
-                "api",
-                "applications"
-              ]
+              "host": ["{{command_url}}"],
+              "path": ["api", "applications"]
             },
-            "description": "Creates a race application. Saves application_id automatically."
+            "description": "Creates a race application as Administrator. Saves `application_id` automatically.\n\n**Pre-requisite:** `race_id` must be set (run *Create Race* first)."
+          },
+          "response": [
+            {
+              "name": "201 — Application Created",
+              "status": "Created",
+              "code": 201,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n  \"id\": \"a1b2c3d4-0000-0000-0000-000000000001\",\n  \"firstName\": \"John\",\n  \"lastName\": \"Doe\",\n  \"club\": \"Trail Blazers\",\n  \"raceId\": \"3fa85f64-5717-4562-b3fc-2c963f66afa6\",\n  \"userId\": \"a0000000-0000-0000-0000-000000000001\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Create Application (as Applicant)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 201 Created', function () { pm.response.to.have.status(201); });",
+                  "pm.test('Response has required fields', function () {",
+                  "    var json = pm.response.json();",
+                  "    pm.expect(json).to.have.property('id');",
+                  "    pm.expect(json).to.have.property('firstName', 'Jane');",
+                  "    pm.expect(json).to.have.property('lastName', 'Smith');",
+                  "    pm.expect(json).to.have.property('userId');",
+                  "});",
+                  "pm.test('Club is null when not provided', function () {",
+                  "    pm.expect(pm.response.json().club).to.be.null;",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [{ "key": "token", "value": "{{jwt_token_applicant}}", "type": "string" }]
+            },
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"firstName\": \"Jane\",\n  \"lastName\": \"Smith\",\n  \"raceId\": \"{{race_id}}\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{command_url}}/api/applications",
+              "host": ["{{command_url}}"],
+              "path": ["api", "applications"]
+            },
+            "description": "Creates an application as Applicant (without club). Demonstrates that Applicants can self-apply.\n\n**Pre-requisites:** Run *Login as Applicant (Command)* and *Create Race* first."
+          },
+          "response": []
+        },
+        {
+          "name": "Create Application — Validation Error (400)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 400 Bad Request', function () { pm.response.to.have.status(400); });",
+                  "pm.test('ProblemDetail with errors map', function () {",
+                  "    var json = pm.response.json();",
+                  "    pm.expect(json).to.have.property('detail', 'Validation failed');",
+                  "    pm.expect(json).to.have.property('errors');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"firstName\": \"\",\n  \"lastName\": \"\",\n  \"raceId\": null\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{command_url}}/api/applications",
+              "host": ["{{command_url}}"],
+              "path": ["api", "applications"]
+            },
+            "description": "Negative test: empty required fields. Expects 400 with validation error map."
+          },
+          "response": [
+            {
+              "name": "400 — Validation Error",
+              "status": "Bad Request",
+              "code": 400,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/problem+json" }],
+              "body": "{\n  \"type\": \"about:blank\",\n  \"title\": \"Bad Request\",\n  \"status\": 400,\n  \"detail\": \"Validation failed\",\n  \"errors\": {\n    \"firstName\": \"must not be blank\",\n    \"lastName\": \"must not be blank\",\n    \"raceId\": \"must not be null\"\n  }\n}"
+            }
+          ]
+        },
+        {
+          "name": "Create Application — Race Not Found (404)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 404', function () { pm.response.to.have.status(404); });",
+                  "pm.test('ProblemDetail body', function () {",
+                  "    var json = pm.response.json();",
+                  "    pm.expect(json).to.have.property('status', 404);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"firstName\": \"John\",\n  \"lastName\": \"Doe\",\n  \"raceId\": \"00000000-0000-0000-0000-000000000000\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{command_url}}/api/applications",
+              "host": ["{{command_url}}"],
+              "path": ["api", "applications"]
+            },
+            "description": "Negative test: apply to a race that does not exist. Expects 404."
           },
           "response": []
         },
@@ -487,7 +848,10 @@
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "pm.test('Status 204', function () { pm.response.to.have.status(204); });"
+                  "pm.test('Status 204 No Content', function () { pm.response.to.have.status(204); });",
+                  "pm.test('Response body is empty', function () {",
+                  "    pm.expect(pm.response.text()).to.be.empty;",
+                  "});"
                 ]
               }
             }
@@ -497,23 +861,48 @@
             "header": [],
             "url": {
               "raw": "{{command_url}}/api/applications/{{application_id}}",
-              "host": [
-                "{{command_url}}"
-              ],
-              "path": [
-                "api",
-                "applications",
-                "{{application_id}}"
-              ]
+              "host": ["{{command_url}}"],
+              "path": ["api", "applications", "{{application_id}}"]
             },
-            "description": "Deletes an application by ID."
+            "description": "Deletes an application by ID. Returns 204 No Content."
+          },
+          "response": []
+        },
+        {
+          "name": "Delete Application — Not Found (404)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 404', function () { pm.response.to.have.status(404); });",
+                  "pm.test('ProblemDetail body', function () {",
+                  "    var json = pm.response.json();",
+                  "    pm.expect(json).to.have.property('status', 404);",
+                  "    pm.expect(json).to.have.property('detail');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{command_url}}/api/applications/00000000-0000-0000-0000-000000000000",
+              "host": ["{{command_url}}"],
+              "path": ["api", "applications", "00000000-0000-0000-0000-000000000000"]
+            },
+            "description": "Negative test: delete a non-existent application. Expects 404."
           },
           "response": []
         }
       ]
     },
     {
-      "name": "Races - Query (port 8082)",
+      "name": "Races — Query (port 8082)",
+      "description": "Read-only Race endpoints. Available to any authenticated user.\n\n> **CQRS note:** Data is populated asynchronously via RabbitMQ. After a command-side write, allow a brief moment before querying.",
       "item": [
         {
           "name": "Get All Races",
@@ -524,8 +913,14 @@
                 "type": "text/javascript",
                 "exec": [
                   "pm.test('Status 200', function () { pm.response.to.have.status(200); });",
-                  "pm.test('Response is array', function () {",
+                  "pm.test('Response is an array', function () {",
                   "    pm.expect(pm.response.json()).to.be.an('array');",
+                  "});",
+                  "pm.test('Each race has id, name, distance', function () {",
+                  "    var races = pm.response.json();",
+                  "    if (races.length > 0) {",
+                  "        pm.expect(races[0]).to.have.all.keys('id', 'name', 'distance');",
+                  "    }",
                   "});"
                 ]
               }
@@ -536,17 +931,21 @@
             "header": [],
             "url": {
               "raw": "{{query_url}}/api/races",
-              "host": [
-                "{{query_url}}"
-              ],
-              "path": [
-                "api",
-                "races"
-              ]
+              "host": ["{{query_url}}"],
+              "path": ["api", "races"]
             },
             "description": "Returns all races from the read-side database."
           },
-          "response": []
+          "response": [
+            {
+              "name": "200 — Races List",
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "[\n  {\n    \"id\": \"3fa85f64-5717-4562-b3fc-2c963f66afa6\",\n    \"name\": \"Mountain Classic\",\n    \"distance\": \"MARATHON\"\n  }\n]"
+            }
+          ]
         },
         {
           "name": "Get Race by ID",
@@ -556,7 +955,15 @@
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "pm.test('Status 200', function () { pm.response.to.have.status(200); });"
+                  "pm.test('Status 200', function () { pm.response.to.have.status(200); });",
+                  "pm.test('Race has correct structure', function () {",
+                  "    var json = pm.response.json();",
+                  "    pm.expect(json).to.have.all.keys('id', 'name', 'distance');",
+                  "});",
+                  "pm.test('ID matches request', function () {",
+                  "    var json = pm.response.json();",
+                  "    pm.expect(json.id).to.eql(pm.collectionVariables.get('race_id'));",
+                  "});"
                 ]
               }
             }
@@ -566,23 +973,73 @@
             "header": [],
             "url": {
               "raw": "{{query_url}}/api/races/{{race_id}}",
-              "host": [
-                "{{query_url}}"
-              ],
-              "path": [
-                "api",
-                "races",
-                "{{race_id}}"
-              ]
+              "host": ["{{query_url}}"],
+              "path": ["api", "races", "{{race_id}}"]
             },
-            "description": "Returns a race by UUID. Run Create Race first to populate race_id."
+            "description": "Returns a single race by UUID.\n\n**Pre-requisite:** Run *Create Race* first to populate `race_id`."
+          },
+          "response": []
+        },
+        {
+          "name": "Get Race — Not Found (404)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 404', function () { pm.response.to.have.status(404); });",
+                  "pm.test('ProblemDetail body', function () {",
+                  "    var json = pm.response.json();",
+                  "    pm.expect(json).to.have.property('status', 404);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{query_url}}/api/races/00000000-0000-0000-0000-000000000000",
+              "host": ["{{query_url}}"],
+              "path": ["api", "races", "00000000-0000-0000-0000-000000000000"]
+            },
+            "description": "Negative test: fetch a race that does not exist. Expects 404."
+          },
+          "response": []
+        },
+        {
+          "name": "Get All Races — Without Auth (401)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 401 Unauthorized', function () { pm.response.to.have.status(401); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{query_url}}/api/races",
+              "host": ["{{query_url}}"],
+              "path": ["api", "races"]
+            },
+            "description": "Negative test: access races without a JWT. Expects 401."
           },
           "response": []
         }
       ]
     },
     {
-      "name": "Applications - Query (port 8082)",
+      "name": "Applications — Query (port 8082)",
+      "description": "Read-only Application endpoints. Available to any authenticated user.\n\n> **CQRS note:** Data is populated asynchronously via RabbitMQ.",
       "item": [
         {
           "name": "Get All Applications",
@@ -593,8 +1050,14 @@
                 "type": "text/javascript",
                 "exec": [
                   "pm.test('Status 200', function () { pm.response.to.have.status(200); });",
-                  "pm.test('Response is array', function () {",
+                  "pm.test('Response is an array', function () {",
                   "    pm.expect(pm.response.json()).to.be.an('array');",
+                  "});",
+                  "pm.test('Each application has required fields', function () {",
+                  "    var apps = pm.response.json();",
+                  "    if (apps.length > 0) {",
+                  "        pm.expect(apps[0]).to.have.all.keys('id', 'firstName', 'lastName', 'club', 'raceId', 'userId');",
+                  "    }",
                   "});"
                 ]
               }
@@ -605,17 +1068,21 @@
             "header": [],
             "url": {
               "raw": "{{query_url}}/api/applications",
-              "host": [
-                "{{query_url}}"
-              ],
-              "path": [
-                "api",
-                "applications"
-              ]
+              "host": ["{{query_url}}"],
+              "path": ["api", "applications"]
             },
             "description": "Returns all race applications from the read-side database."
           },
-          "response": []
+          "response": [
+            {
+              "name": "200 — Applications List",
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "[\n  {\n    \"id\": \"a1b2c3d4-0000-0000-0000-000000000001\",\n    \"firstName\": \"John\",\n    \"lastName\": \"Doe\",\n    \"club\": \"Trail Blazers\",\n    \"raceId\": \"3fa85f64-5717-4562-b3fc-2c963f66afa6\",\n    \"userId\": \"a0000000-0000-0000-0000-000000000001\"\n  }\n]"
+            }
+          ]
         },
         {
           "name": "Get Application by ID",
@@ -625,7 +1092,15 @@
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "pm.test('Status 200', function () { pm.response.to.have.status(200); });"
+                  "pm.test('Status 200', function () { pm.response.to.have.status(200); });",
+                  "pm.test('Application has correct structure', function () {",
+                  "    var json = pm.response.json();",
+                  "    pm.expect(json).to.have.all.keys('id', 'firstName', 'lastName', 'club', 'raceId', 'userId');",
+                  "});",
+                  "pm.test('ID matches request', function () {",
+                  "    var json = pm.response.json();",
+                  "    pm.expect(json.id).to.eql(pm.collectionVariables.get('application_id'));",
+                  "});"
                 ]
               }
             }
@@ -635,16 +1110,39 @@
             "header": [],
             "url": {
               "raw": "{{query_url}}/api/applications/{{application_id}}",
-              "host": [
-                "{{query_url}}"
-              ],
-              "path": [
-                "api",
-                "applications",
-                "{{application_id}}"
-              ]
+              "host": ["{{query_url}}"],
+              "path": ["api", "applications", "{{application_id}}"]
             },
-            "description": "Returns an application by UUID. Run Create Application first."
+            "description": "Returns an application by UUID.\n\n**Pre-requisite:** Run *Create Application* first to populate `application_id`."
+          },
+          "response": []
+        },
+        {
+          "name": "Get Application — Not Found (404)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 404', function () { pm.response.to.have.status(404); });",
+                  "pm.test('ProblemDetail body', function () {",
+                  "    var json = pm.response.json();",
+                  "    pm.expect(json).to.have.property('status', 404);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{query_url}}/api/applications/00000000-0000-0000-0000-000000000000",
+              "host": ["{{query_url}}"],
+              "path": ["api", "applications", "00000000-0000-0000-0000-000000000000"]
+            },
+            "description": "Negative test: fetch an application that does not exist. Expects 404."
           },
           "response": []
         }

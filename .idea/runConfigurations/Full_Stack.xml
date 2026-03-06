@@ -1,0 +1,9 @@
+<component name="ProjectRunConfigurationManager">
+  <configuration default="false" name="Full Stack (Both Services + Frontend)" type="CompoundRunConfigurationType">
+    <toRun name="Command Service" type="SpringBootApplicationConfigurationType" />
+    <toRun name="Query Service" type="SpringBootApplicationConfigurationType" />
+    <toRun name="Frontend Dev" type="js.build_tools.npm" />
+    <method v="2" />
+  </configuration>
+</component>
+

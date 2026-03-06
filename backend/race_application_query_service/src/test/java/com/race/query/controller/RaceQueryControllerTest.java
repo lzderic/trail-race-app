@@ -9,7 +9,7 @@ import com.race.query.service.RaceQueryService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.context.annotation.Import;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.test.context.support.WithMockUser;
@@ -27,17 +27,18 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @Import({SecurityConfig.class, JwtAuthFilter.class, JwtService.class})
 @TestPropertySource(properties = {
     "jwt.secret=test-secret-key-that-is-at-least-256-bits-long-for-testing",
-    "jwt.expiration-ms=3600000"
+    "jwt.expiration-ms=3600000",
+    "cors.allowed-origins=http://localhost:3000"
 })
 class RaceQueryControllerTest {
 
     @Autowired
     private MockMvc mockMvc;
 
-    @MockBean
+    @MockitoBean
     private RaceQueryService raceQueryService;
 
-    @MockBean
+    @MockitoBean
     private UserDetailsService userDetailsService;
 
     @Test
@@ -49,7 +50,7 @@ class RaceQueryControllerTest {
         mockMvc.perform(get("/api/races"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[0].name").value("Forest 5K"))
-                .andExpect(jsonPath("$[0].distance").value("FIVE_K"));
+                .andExpect(jsonPath("$[0].distance").value("5k"));
     }
 
     @Test

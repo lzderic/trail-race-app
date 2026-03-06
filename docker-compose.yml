@@ -41,9 +41,10 @@ services:
 
   # ── Command Service ─────────────────────────────────────────────
   command-service:
+    image: trail-race-app-command-service
     build:
-      context: ./backend/race_application_command_service
-      dockerfile: Dockerfile
+      context: ./backend
+      dockerfile: race_application_command_service/Dockerfile
     container_name: trailrace-command-service
     restart: unless-stopped
     ports:
@@ -58,6 +59,7 @@ services:
       RABBITMQ_PASSWORD: ${RABBITMQ_PASSWORD:-guest}
       JWT_SECRET: ${JWT_SECRET:-a-very-long-secret-key-that-is-at-least-256-bits-long-for-hs256}
       JWT_EXPIRATION_MS: ${JWT_EXPIRATION_MS:-86400000}
+      CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS:-http://localhost:3000}
     depends_on:
       postgres:
         condition: service_healthy
@@ -66,9 +68,10 @@ services:
 
   # ── Query Service ───────────────────────────────────────────────
   query-service:
+    image: trail-race-app-query-service
     build:
-      context: ./backend/race_application_query_service
-      dockerfile: Dockerfile
+      context: ./backend
+      dockerfile: race_application_query_service/Dockerfile
     container_name: trailrace-query-service
     restart: unless-stopped
     ports:
@@ -83,6 +86,7 @@ services:
       RABBITMQ_PASSWORD: ${RABBITMQ_PASSWORD:-guest}
       JWT_SECRET: ${JWT_SECRET:-a-very-long-secret-key-that-is-at-least-256-bits-long-for-hs256}
       JWT_EXPIRATION_MS: ${JWT_EXPIRATION_MS:-86400000}
+      CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS:-http://localhost:3000}
     depends_on:
       postgres:
         condition: service_healthy
@@ -91,6 +95,7 @@ services:
 
   # ── Frontend ────────────────────────────────────────────────────
   frontend:
+    image: trail-race-app-frontend
     build:
       context: ./frontend
       dockerfile: Dockerfile
@@ -104,6 +109,19 @@ services:
     depends_on:
       - command-service
       - query-service
+
+  # ── Storybook ───────────────────────────────────────────────────
+  storybook:
+    image: trail-race-app-storybook
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile.storybook
+    container_name: trailrace-storybook
+    restart: unless-stopped
+    ports:
+      - "${STORYBOOK_PORT:-6006}:80"
+    profiles:
+      - storybook
 
 volumes:
   postgres_data:

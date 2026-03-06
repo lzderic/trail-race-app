@@ -22,9 +22,22 @@ public class OpenApiConfig {
                         .description("""
                                 Write-side of the Trail Race CQRS backend.
                                 All mutating endpoints (CREATE / UPDATE / DELETE) for Races and Applications.
-                                Requires **Administrator** role.
+                                
+                                **Authorization:**
+                                - Race endpoints (create / update / delete) — **Administrator** role required
+                                - Application endpoints (create / delete) — **Administrator** or **Applicant** role
                                 
                                 **Login** via `POST /api/auth/login` to obtain a JWT, then click **Authorize** and paste the token.
+                                
+                                **Seed credentials:**
+                                | Email | Password | Role |
+                                |---|---|---|
+                                | admin@trailrace.com | admin123 | Administrator |
+                                | jane@example.com | applicant123 | Applicant |
+                                | marco@example.com | applicant123 | Applicant |
+                                | lena@example.com | applicant123 | Applicant |
+                                
+                                **Seed races:** 6 sample races (Mountain Trail 5K, Forest Loop 10K, Coastal Half Marathon, Alpine Marathon, City Park 5K, River Valley 10K) are pre-loaded.
                                 """)
                         .version("1.0.0")
                         .contact(new Contact()

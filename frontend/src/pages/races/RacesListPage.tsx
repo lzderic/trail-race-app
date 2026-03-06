@@ -1,20 +1,24 @@
 import { useEffect, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
 import { useAppDispatch, useAppSelector } from '../../store/hooks'
-import { fetchRaces } from '../../store/slices/racesSlice'
+import { fetchRaces, deleteRace } from '../../store/slices/racesSlice'
 import { Spinner } from '../../components/common/Spinner'
 import { Alert } from '../../components/common/Alert'
+import { ConfirmDialog } from '../../components/common/ConfirmDialog'
 import { DISTANCE_LABELS, distanceBadgeClass } from '../../utils/distance'
 import type { Race } from '../../types'
 import { ApplyToRaceModal } from './ApplyToRaceModal'
+import { RaceFormModal } from '../admin/RaceFormModal'
 
 export function RacesListPage() {
   const dispatch = useAppDispatch()
-  const navigate = useNavigate()
   const { items: races, loading, error } = useAppSelector((s) => s.races)
   const user = useAppSelector((s) => s.auth.user)
 
   const [applyRace, setApplyRace] = useState<Race | null>(null)
+  const [showCreate, setShowCreate] = useState(false)
+  const [editRace, setEditRace] = useState<Race | null>(null)
+  const [deleteId, setDeleteId] = useState<string | null>(null)
+  const [deleteLoading, setDeleteLoading] = useState(false)
 
   useEffect(() => {
     dispatch(fetchRaces())
@@ -22,13 +26,21 @@ export function RacesListPage() {
 
   const isAdmin = user?.role === 'Administrator'
 
+  const handleDelete = async () => {
+    if (!deleteId) return
+    setDeleteLoading(true)
+    await dispatch(deleteRace(deleteId))
+    setDeleteLoading(false)
+    setDeleteId(null)
+  }
+
   return (
     <>
       <div className="page-header">
         <h1 className="page-title">Available Races</h1>
         {isAdmin && (
-          <button className="btn btn-primary" onClick={() => navigate('/admin/races')}>
-            + Manage Races
+          <button className="btn btn-primary" onClick={() => setShowCreate(true)}>
+            + Add Race
           </button>
         )}
       </div>
@@ -44,7 +56,11 @@ export function RacesListPage() {
             <path d="M12 8v4m0 4h.01" />
           </svg>
           <h3>No races available</h3>
-          <p>Check back later or ask an administrator to add races.</p>
+          <p>
+            {isAdmin
+              ? 'Click "+ Add Race" to create the first race.'
+              : 'Check back later or ask an administrator to add races.'}
+          </p>
         </div>
       ) : (
         <div className="card">
@@ -54,20 +70,37 @@ export function RacesListPage() {
                 <tr>
                   <th>Name</th>
                   <th>Distance</th>
-                  <th style={{ width: 160 }}>Action</th>
+                  <th style={{ width: isAdmin ? 200 : 160 }}>Action</th>
                 </tr>
               </thead>
               <tbody>
                 {races.map((race) => (
                   <tr key={race.id}>
-                    <td><strong>{race.name}</strong></td>
+                    <td>
+                      <strong>{race.name}</strong>
+                    </td>
                     <td>
                       <span className={distanceBadgeClass(race.distance)}>
                         {DISTANCE_LABELS[race.distance]}
                       </span>
                     </td>
                     <td>
-                      {!isAdmin && (
+                      {isAdmin ? (
+                        <div style={{ display: 'flex', gap: '0.5rem' }}>
+                          <button
+                            className="btn btn-secondary btn-sm"
+                            onClick={() => setEditRace(race)}
+                          >
+                            Edit
+                          </button>
+                          <button
+                            className="btn btn-danger btn-sm"
+                            onClick={() => setDeleteId(race.id)}
+                          >
+                            Delete
+                          </button>
+                        </div>
+                      ) : (
                         <button
                           className="btn btn-primary btn-sm"
                           onClick={() => setApplyRace(race)}
@@ -84,13 +117,21 @@ export function RacesListPage() {
         </div>
       )}
 
-      {applyRace && (
-        <ApplyToRaceModal
-          race={applyRace}
-          onClose={() => setApplyRace(null)}
+      {applyRace && <ApplyToRaceModal race={applyRace} onClose={() => setApplyRace(null)} />}
+
+      {showCreate && <RaceFormModal onClose={() => setShowCreate(false)} />}
+
+      {editRace && <RaceFormModal race={editRace} onClose={() => setEditRace(null)} />}
+
+      {deleteId && (
+        <ConfirmDialog
+          title="Delete Race"
+          message="Are you sure you want to delete this race? All associated applications may be affected."
+          onConfirm={handleDelete}
+          onCancel={() => setDeleteId(null)}
+          loading={deleteLoading}
         />
       )}
     </>
   )
 }
-

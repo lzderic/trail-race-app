@@ -15,6 +15,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ProblemDetail;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -33,7 +34,8 @@ public class RaceCommandController {
     @ApiResponses({
         @ApiResponse(responseCode = "201", description = "Race created",
             content = @Content(schema = @Schema(implementation = RaceResponse.class))),
-        @ApiResponse(responseCode = "400", description = "Validation error", content = @Content),
+        @ApiResponse(responseCode = "400", description = "Validation error",
+            content = @Content(schema = @Schema(implementation = ProblemDetail.class))),
         @ApiResponse(responseCode = "401", description = "Unauthenticated", content = @Content),
         @ApiResponse(responseCode = "403", description = "Forbidden — Administrator role required", content = @Content)
     })
@@ -46,10 +48,12 @@ public class RaceCommandController {
     @ApiResponses({
         @ApiResponse(responseCode = "200", description = "Race updated",
             content = @Content(schema = @Schema(implementation = RaceResponse.class))),
-        @ApiResponse(responseCode = "400", description = "Validation error", content = @Content),
+        @ApiResponse(responseCode = "400", description = "Validation error",
+            content = @Content(schema = @Schema(implementation = ProblemDetail.class))),
         @ApiResponse(responseCode = "401", description = "Unauthenticated", content = @Content),
         @ApiResponse(responseCode = "403", description = "Forbidden — Administrator role required", content = @Content),
-        @ApiResponse(responseCode = "404", description = "Race not found", content = @Content)
+        @ApiResponse(responseCode = "404", description = "Race not found",
+            content = @Content(schema = @Schema(implementation = ProblemDetail.class)))
     })
     @PatchMapping("/{id}")
     public ResponseEntity<RaceResponse> patchRace(
@@ -63,7 +67,8 @@ public class RaceCommandController {
         @ApiResponse(responseCode = "204", description = "Race deleted"),
         @ApiResponse(responseCode = "401", description = "Unauthenticated", content = @Content),
         @ApiResponse(responseCode = "403", description = "Forbidden — Administrator role required", content = @Content),
-        @ApiResponse(responseCode = "404", description = "Race not found", content = @Content)
+        @ApiResponse(responseCode = "404", description = "Race not found",
+            content = @Content(schema = @Schema(implementation = ProblemDetail.class)))
     })
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteRace(

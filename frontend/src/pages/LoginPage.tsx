@@ -16,7 +16,9 @@ export function LoginPage() {
   }, [token, navigate])
 
   useEffect(() => {
-    return () => { dispatch(clearError()) }
+    return () => {
+      dispatch(clearError())
+    }
   }, [dispatch])
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -40,7 +42,9 @@ export function LoginPage() {
 
         <form onSubmit={handleSubmit} noValidate>
           <div className="form-group">
-            <label className="form-label" htmlFor="email">Email</label>
+            <label className="form-label" htmlFor="email">
+              Email
+            </label>
             <input
               id="email"
               type="email"
@@ -54,7 +58,9 @@ export function LoginPage() {
           </div>
 
           <div className="form-group">
-            <label className="form-label" htmlFor="password">Password</label>
+            <label className="form-label" htmlFor="password">
+              Password
+            </label>
             <input
               id="password"
               type="password"
@@ -76,12 +82,17 @@ export function LoginPage() {
           </button>
         </form>
 
-        <p style={{ marginTop: '1.25rem', fontSize: '0.82rem', color: 'var(--text-muted)', textAlign: 'center' }}>
+        <p
+          style={{
+            marginTop: '1.25rem',
+            fontSize: '0.82rem',
+            color: 'var(--text-muted)',
+            textAlign: 'center',
+          }}
+        >
           Use your assigned credentials to log in.
         </p>
       </div>
     </div>
   )
 }
-
-

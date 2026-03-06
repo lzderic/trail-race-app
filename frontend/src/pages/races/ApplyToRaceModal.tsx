@@ -15,9 +15,10 @@ export function ApplyToRaceModal({ race, onClose }: Props) {
   const dispatch = useAppDispatch()
   const navigate = useNavigate()
   const { loading, error } = useAppSelector((s) => s.applications)
+  const user = useAppSelector((s) => s.auth.user)
 
-  const [firstName, setFirstName] = useState('')
-  const [lastName, setLastName] = useState('')
+  const [firstName, setFirstName] = useState(user?.firstName ?? '')
+  const [lastName, setLastName] = useState(user?.lastName ?? '')
   const [club, setClub] = useState('')
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({})
   const [success, setSuccess] = useState(false)
@@ -32,11 +33,14 @@ export function ApplyToRaceModal({ race, onClose }: Props) {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     const errs = validate()
-    if (Object.keys(errs).length > 0) { setFieldErrors(errs); return }
+    if (Object.keys(errs).length > 0) {
+      setFieldErrors(errs)
+      return
+    }
     setFieldErrors({})
 
     const result = await dispatch(
-      createApplication({ firstName, lastName, club: club || undefined, raceId: race.id })
+      createApplication({ firstName, lastName, club: club || undefined, raceId: race.id }),
     )
     if (createApplication.fulfilled.match(result)) {
       setSuccess(true)
@@ -52,7 +56,9 @@ export function ApplyToRaceModal({ race, onClose }: Props) {
       <div className="modal" onClick={(e) => e.stopPropagation()} role="dialog" aria-modal="true">
         <div className="modal-header">
           <h2 className="modal-title">Apply to Race</h2>
-          <button className="modal-close" onClick={onClose} aria-label="Close">×</button>
+          <button className="modal-close" onClick={onClose} aria-label="Close">
+            ×
+          </button>
         </div>
 
         <div style={{ marginBottom: '1.25rem' }}>
@@ -68,7 +74,9 @@ export function ApplyToRaceModal({ race, onClose }: Props) {
         {!success && (
           <form onSubmit={handleSubmit} noValidate>
             <div className="form-group">
-              <label className="form-label" htmlFor="apply-fname">First Name *</label>
+              <label className="form-label" htmlFor="apply-fname">
+                First Name *
+              </label>
               <input
                 id="apply-fname"
                 className={`form-control${fieldErrors.firstName ? ' error' : ''}`}
@@ -80,7 +88,9 @@ export function ApplyToRaceModal({ race, onClose }: Props) {
             </div>
 
             <div className="form-group">
-              <label className="form-label" htmlFor="apply-lname">Last Name *</label>
+              <label className="form-label" htmlFor="apply-lname">
+                Last Name *
+              </label>
               <input
                 id="apply-lname"
                 className={`form-control${fieldErrors.lastName ? ' error' : ''}`}
@@ -92,7 +102,9 @@ export function ApplyToRaceModal({ race, onClose }: Props) {
             </div>
 
             <div className="form-group">
-              <label className="form-label" htmlFor="apply-club">Club (optional)</label>
+              <label className="form-label" htmlFor="apply-club">
+                Club (optional)
+              </label>
               <input
                 id="apply-club"
                 className="form-control"
@@ -117,4 +129,3 @@ export function ApplyToRaceModal({ race, onClose }: Props) {
     </div>
   )
 }
-

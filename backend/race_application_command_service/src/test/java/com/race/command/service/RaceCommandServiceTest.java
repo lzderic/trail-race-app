@@ -9,6 +9,7 @@ import com.race.command.event.EventType;
 import com.race.command.event.RaceEvent;
 import com.race.command.exception.ResourceNotFoundException;
 import com.race.command.publisher.EventPublisher;
+import com.race.command.repository.ApplicationRepository;
 import com.race.command.repository.RaceRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -18,6 +19,7 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.util.Collections;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -31,6 +33,9 @@ class RaceCommandServiceTest {
 
     @Mock
     private RaceRepository raceRepository;
+
+    @Mock
+    private ApplicationRepository applicationRepository;
 
     @Mock
     private EventPublisher eventPublisher;
@@ -93,6 +98,7 @@ class RaceCommandServiceTest {
     @Test
     void deleteRace_shouldDeleteAndPublishEvent() {
         when(raceRepository.findById(existingRace.getId())).thenReturn(Optional.of(existingRace));
+        when(applicationRepository.findByRaceId(existingRace.getId())).thenReturn(Collections.emptyList());
 
         raceCommandService.deleteRace(existingRace.getId());
 

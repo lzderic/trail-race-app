@@ -80,7 +80,7 @@ class ApplicationQueryServiceTest {
         when(applicationRepository.findById(newId)).thenReturn(Optional.empty());
         when(applicationRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
-        applicationQueryService.upsertApplication(newId, "Bob", "Jones", null, raceId);
+        applicationQueryService.upsertApplication(newId, "Bob", "Jones", null, raceId, UUID.randomUUID());
 
         ArgumentCaptor<Application> captor = ArgumentCaptor.forClass(Application.class);
         verify(applicationRepository).save(captor.capture());

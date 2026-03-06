@@ -18,24 +18,27 @@ interface JwtPayload {
 export function jwtDecode(token: string): User {
   const parts = token.split('.')
   if (parts.length !== 3) throw new Error('Invalid JWT')
-  const payload: JwtPayload = JSON.parse(
-    atob(parts[1].replace(/-/g, '+').replace(/_/g, '/'))
-  )
+  const payload: JwtPayload = JSON.parse(atob(parts[1].replace(/-/g, '+').replace(/_/g, '/')))
 
   // Support both flat role field and Spring-style "roles" array
   const rawRole: string =
-    payload.role ??
-    (Array.isArray(payload.roles) ? payload.roles[0] : undefined) ??
-    ''
+    payload.role ?? (Array.isArray(payload.roles) ? payload.roles[0] : undefined) ?? ''
 
-  const role = rawRole.replace(/^ROLE_/, '') as User['role']
+  // Strip ROLE_ prefix, then normalise ALL_CAPS enum names → Title case
+  const stripped = rawRole.replace(/^ROLE_/, '')
+  const roleMap: Record<string, User['role']> = {
+    ADMINISTRATOR: 'Administrator',
+    APPLICANT: 'Applicant',
+    Administrator: 'Administrator',
+    Applicant: 'Applicant',
+  }
+  const role: User['role'] = roleMap[stripped] ?? (stripped as User['role'])
 
   return {
     id: (payload.id ?? payload.sub ?? '') as string,
     email: (payload.sub ?? payload.email ?? '') as string,
     firstName: (payload.firstName ?? '') as string,
     lastName: (payload.lastName ?? '') as string,
-    role
+    role,
   }
 }
-

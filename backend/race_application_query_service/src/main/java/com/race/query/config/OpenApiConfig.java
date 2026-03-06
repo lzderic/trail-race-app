@@ -22,9 +22,19 @@ public class OpenApiConfig {
                         .description("""
                                 Read-side of the Trail Race CQRS backend.
                                 GET endpoints for Races and Applications, populated via RabbitMQ events.
-                                Requires any authenticated user role (APPLICANT or ADMINISTRATOR).
+                                Requires any authenticated user role (**Applicant** or **Administrator**).
                                 
                                 **Login** via `POST /api/auth/login` to obtain a JWT, then click **Authorize** and paste the token.
+                                
+                                **Seed credentials:**
+                                | Email | Password | Role |
+                                |---|---|---|
+                                | admin@trailrace.com | admin123 | Administrator |
+                                | jane@example.com | applicant123 | Applicant |
+                                | marco@example.com | applicant123 | Applicant |
+                                | lena@example.com | applicant123 | Applicant |
+                                
+                                **Seed races:** 6 sample races (Mountain Trail 5K, Forest Loop 10K, Coastal Half Marathon, Alpine Marathon, City Park 5K, River Valley 10K) are pre-loaded.
                                 """)
                         .version("1.0.0")
                         .contact(new Contact()

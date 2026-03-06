@@ -15,14 +15,16 @@ export function ConfirmDialog({
   cancelLabel = 'Cancel',
   onConfirm,
   onCancel,
-  loading = false
+  loading = false,
 }: ConfirmDialogProps) {
   return (
     <div className="modal-backdrop" onClick={onCancel}>
       <div className="modal" onClick={(e) => e.stopPropagation()} role="dialog" aria-modal="true">
         <div className="modal-header">
           <h2 className="modal-title">{title}</h2>
-          <button className="modal-close" onClick={onCancel} aria-label="Close" disabled={loading}>×</button>
+          <button className="modal-close" onClick={onCancel} aria-label="Close" disabled={loading}>
+            ×
+          </button>
         </div>
         <p className="confirm-text">{message}</p>
         <div className="modal-footer">
@@ -37,5 +39,3 @@ export function ConfirmDialog({
     </div>
   )
 }
-
-
