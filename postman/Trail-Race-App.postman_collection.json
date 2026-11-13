@@ -405,7 +405,7 @@
             "header": [{ "key": "Content-Type", "value": "application/json" }],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"name\": \"Mountain Classic\",\n  \"distance\": \"MARATHON\"\n}",
+              "raw": "{\n  \"name\": \"Mountain Classic\",\n  \"distance\": \"Marathon\"\n}",
               "options": { "raw": { "language": "json" } }
             },
             "url": {
@@ -413,7 +413,7 @@
               "host": ["{{command_url}}"],
               "path": ["api", "races"]
             },
-            "description": "Creates a race. Saves `race_id` automatically.\n\nDistance values: `FIVE_K` | `TEN_K` | `HALF_MARATHON` | `MARATHON`"
+            "description": "Creates a race. Saves `race_id` automatically.\n\nDistance values: `5k` | `10k` | `HalfMarathon` | `Marathon` (enum constant names such as `MARATHON` are accepted as input too)"
           },
           "response": [
             {
@@ -422,7 +422,7 @@
               "code": 201,
               "_postman_previewlanguage": "json",
               "header": [{ "key": "Content-Type", "value": "application/json" }],
-              "body": "{\n  \"id\": \"3fa85f64-5717-4562-b3fc-2c963f66afa6\",\n  \"name\": \"Mountain Classic\",\n  \"distance\": \"MARATHON\"\n}"
+              "body": "{\n  \"id\": \"3fa85f64-5717-4562-b3fc-2c963f66afa6\",\n  \"name\": \"Mountain Classic\",\n  \"distance\": \"Marathon\"\n}"
             }
           ]
         },
@@ -482,7 +482,7 @@
                   "    pm.expect(pm.response.json().name).to.eql('Mountain Classic 2026');",
                   "});",
                   "pm.test('Distance was updated', function () {",
-                  "    pm.expect(pm.response.json().distance).to.eql('HALF_MARATHON');",
+                  "    pm.expect(pm.response.json().distance).to.eql('HalfMarathon');",
                   "});"
                 ]
               }
@@ -493,7 +493,7 @@
             "header": [{ "key": "Content-Type", "value": "application/json" }],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"name\": \"Mountain Classic 2026\",\n  \"distance\": \"HALF_MARATHON\"\n}",
+              "raw": "{\n  \"name\": \"Mountain Classic 2026\",\n  \"distance\": \"HalfMarathon\"\n}",
               "options": { "raw": { "language": "json" } }
             },
             "url": {
@@ -510,7 +510,7 @@
               "code": 200,
               "_postman_previewlanguage": "json",
               "header": [{ "key": "Content-Type", "value": "application/json" }],
-              "body": "{\n  \"id\": \"3fa85f64-5717-4562-b3fc-2c963f66afa6\",\n  \"name\": \"Mountain Classic 2026\",\n  \"distance\": \"HALF_MARATHON\"\n}"
+              "body": "{\n  \"id\": \"3fa85f64-5717-4562-b3fc-2c963f66afa6\",\n  \"name\": \"Mountain Classic 2026\",\n  \"distance\": \"HalfMarathon\"\n}"
             }
           ]
         },
@@ -645,7 +645,7 @@
             "header": [{ "key": "Content-Type", "value": "application/json" }],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"name\": \"Should Fail\",\n  \"distance\": \"FIVE_K\"\n}",
+              "raw": "{\n  \"name\": \"Should Fail\",\n  \"distance\": \"5k\"\n}",
               "options": { "raw": { "language": "json" } }
             },
             "url": {
@@ -943,7 +943,7 @@
               "code": 200,
               "_postman_previewlanguage": "json",
               "header": [{ "key": "Content-Type", "value": "application/json" }],
-              "body": "[\n  {\n    \"id\": \"3fa85f64-5717-4562-b3fc-2c963f66afa6\",\n    \"name\": \"Mountain Classic\",\n    \"distance\": \"MARATHON\"\n  }\n]"
+              "body": "[\n  {\n    \"id\": \"3fa85f64-5717-4562-b3fc-2c963f66afa6\",\n    \"name\": \"Mountain Classic\",\n    \"distance\": \"Marathon\"\n  }\n]"
             }
           ]
         },

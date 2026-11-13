@@ -1,34 +1,48 @@
 import { useEffect, useState } from 'react'
 import { useAppDispatch, useAppSelector } from '../../store/hooks'
-import { fetchRaces, deleteRace } from '../../store/slices/racesSlice'
-import { fetchApplications } from '../../store/slices/applicationsSlice'
+import {
+  deleteRace,
+  fetchRaces,
+  selectRaces,
+  selectRacesError,
+  selectRacesLoading,
+} from '../../store/slices/racesSlice'
+import { useConfirmDelete } from '../../hooks/useConfirmDelete'
 import { Spinner } from '../../components/common/Spinner'
 import { Alert } from '../../components/common/Alert'
-import { ConfirmDialog } from '../../components/common/ConfirmDialog'
-import { DISTANCE_LABELS, distanceBadgeClass } from '../../utils/distance'
+import { EmptyState } from '../../components/common/EmptyState'
+import { BoltIcon } from '../../components/common/icons'
+import { RacesTable } from '../../components/races/RacesTable'
+import { DeleteRaceDialog } from '../../components/races/DeleteRaceDialog'
 import { RaceFormModal } from './RaceFormModal'
 import type { Race } from '../../types'
 
 export function AdminRacesPage() {
   const dispatch = useAppDispatch()
-  const { items: races, loading, error } = useAppSelector((s) => s.races)
+  const races = useAppSelector(selectRaces)
+  const loading = useAppSelector(selectRacesLoading)
+  const error = useAppSelector(selectRacesError)
 
   const [showCreate, setShowCreate] = useState(false)
   const [editRace, setEditRace] = useState<Race | null>(null)
-  const [deleteId, setDeleteId] = useState<string | null>(null)
-  const [deleteLoading, setDeleteLoading] = useState(false)
+  const deletion = useConfirmDelete<Race>((id) => dispatch(deleteRace(id)))
 
   useEffect(() => {
     dispatch(fetchRaces())
   }, [dispatch])
 
-  const handleDelete = async () => {
-    if (!deleteId) return
-    setDeleteLoading(true)
-    await dispatch(deleteRace(deleteId))
-    dispatch(fetchApplications()) // refresh applications after race deletion
-    setDeleteLoading(false)
-    setDeleteId(null)
+  const renderContent = () => {
+    if (loading) return <Spinner />
+    if (races.length === 0) {
+      return (
+        <EmptyState
+          icon={<BoltIcon />}
+          title="No races yet"
+          description='Click "Add Race" to create the first race.'
+        />
+      )
+    }
+    return <RacesTable races={races} onEdit={setEditRace} onDelete={deletion.request} />
   }
 
   return (
@@ -42,75 +56,11 @@ export function AdminRacesPage() {
 
       {error && <Alert message={error} />}
 
-      {loading ? (
-        <Spinner />
-      ) : races.length === 0 ? (
-        <div className="empty-state">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
-            <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" />
-          </svg>
-          <h3>No races yet</h3>
-          <p>Click "Add Race" to create the first race.</p>
-        </div>
-      ) : (
-        <div className="card">
-          <div className="table-wrapper">
-            <table>
-              <thead>
-                <tr>
-                  <th>Name</th>
-                  <th>Distance</th>
-                  <th style={{ width: 180 }}>Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {races.map((race) => (
-                  <tr key={race.id}>
-                    <td>
-                      <strong>{race.name}</strong>
-                    </td>
-                    <td>
-                      <span className={distanceBadgeClass(race.distance)}>
-                        {DISTANCE_LABELS[race.distance]}
-                      </span>
-                    </td>
-                    <td>
-                      <div style={{ display: 'flex', gap: '0.5rem' }}>
-                        <button
-                          className="btn btn-secondary btn-sm"
-                          onClick={() => setEditRace(race)}
-                        >
-                          Edit
-                        </button>
-                        <button
-                          className="btn btn-danger btn-sm"
-                          onClick={() => setDeleteId(race.id)}
-                        >
-                          Delete
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      )}
+      {renderContent()}
 
       {showCreate && <RaceFormModal onClose={() => setShowCreate(false)} />}
-
       {editRace && <RaceFormModal race={editRace} onClose={() => setEditRace(null)} />}
-
-      {deleteId && (
-        <ConfirmDialog
-          title="Delete Race"
-          message="Are you sure you want to delete this race? All associated applications may be affected."
-          onConfirm={handleDelete}
-          onCancel={() => setDeleteId(null)}
-          loading={deleteLoading}
-        />
-      )}
+      <DeleteRaceDialog deletion={deletion} />
     </>
   )
 }

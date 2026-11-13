@@ -1,53 +1,83 @@
-import { useState } from 'react'
+import { useEffect, useRef, useState, type FormEvent } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAppDispatch, useAppSelector } from '../../store/hooks'
-import { createApplication } from '../../store/slices/applicationsSlice'
+import {
+  clearApplicationError,
+  createApplication,
+  selectApplicationsError,
+} from '../../store/slices/applicationsSlice'
+import { selectCurrentUser } from '../../store/slices/authSlice'
 import { Alert } from '../../components/common/Alert'
-import { DISTANCE_LABELS, distanceBadgeClass } from '../../utils/distance'
+import { DistanceBadge } from '../../components/common/DistanceBadge'
 import type { Race } from '../../types'
 
-interface Props {
+interface ApplyToRaceModalProps {
   race: Race
   onClose: () => void
 }
 
-export function ApplyToRaceModal({ race, onClose }: Props) {
+interface ApplicationFormErrors {
+  firstName?: string
+  lastName?: string
+}
+
+const MAX_FIELD_LENGTH = 255
+const SUCCESS_REDIRECT_DELAY_MS = 1200
+
+function validateApplicant(firstName: string, lastName: string): ApplicationFormErrors {
+  const errors: ApplicationFormErrors = {}
+  if (!firstName.trim()) errors.firstName = 'First name is required'
+  if (!lastName.trim()) errors.lastName = 'Last name is required'
+  return errors
+}
+
+export function ApplyToRaceModal({ race, onClose }: ApplyToRaceModalProps) {
   const dispatch = useAppDispatch()
   const navigate = useNavigate()
-  const { loading, error } = useAppSelector((s) => s.applications)
-  const user = useAppSelector((s) => s.auth.user)
+  const error = useAppSelector(selectApplicationsError)
+  const user = useAppSelector(selectCurrentUser)
 
   const [firstName, setFirstName] = useState(user?.firstName ?? '')
   const [lastName, setLastName] = useState(user?.lastName ?? '')
   const [club, setClub] = useState('')
-  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({})
+  const [submitting, setSubmitting] = useState(false)
+  const [fieldErrors, setFieldErrors] = useState<ApplicationFormErrors>({})
   const [success, setSuccess] = useState(false)
+  const redirectTimer = useRef<ReturnType<typeof setTimeout>>()
 
-  const validate = () => {
-    const errs: Record<string, string> = {}
-    if (!firstName.trim()) errs.firstName = 'First name is required'
-    if (!lastName.trim()) errs.lastName = 'Last name is required'
-    return errs
-  }
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    const errs = validate()
-    if (Object.keys(errs).length > 0) {
-      setFieldErrors(errs)
-      return
+  // Start with a clean error banner and make sure neither the error nor the pending
+  // redirect outlives the modal.
+  useEffect(() => {
+    dispatch(clearApplicationError())
+    return () => {
+      dispatch(clearApplicationError())
+      clearTimeout(redirectTimer.current)
     }
-    setFieldErrors({})
+  }, [dispatch])
 
+  const handleSubmit = async (event: FormEvent) => {
+    event.preventDefault()
+    const errors = validateApplicant(firstName, lastName)
+    setFieldErrors(errors)
+    if (errors.firstName || errors.lastName) return
+
+    setSubmitting(true)
     const result = await dispatch(
-      createApplication({ firstName, lastName, club: club || undefined, raceId: race.id }),
+      createApplication({
+        firstName: firstName.trim(),
+        lastName: lastName.trim(),
+        club: club.trim() || undefined,
+        raceId: race.id,
+      }),
     )
+    setSubmitting(false)
+
     if (createApplication.fulfilled.match(result)) {
       setSuccess(true)
-      setTimeout(() => {
+      redirectTimer.current = setTimeout(() => {
         onClose()
         navigate('/applications')
-      }, 1200)
+      }, SUCCESS_REDIRECT_DELAY_MS)
     }
   }
 
@@ -63,9 +93,7 @@ export function ApplyToRaceModal({ race, onClose }: Props) {
 
         <div style={{ marginBottom: '1.25rem' }}>
           <p style={{ fontWeight: 600, fontSize: '1rem' }}>{race.name}</p>
-          <span className={distanceBadgeClass(race.distance)}>
-            {DISTANCE_LABELS[race.distance]}
-          </span>
+          <DistanceBadge distance={race.distance} />
         </div>
 
         {success && <Alert message="Application submitted successfully!" type="success" />}
@@ -82,7 +110,7 @@ export function ApplyToRaceModal({ race, onClose }: Props) {
                 className={`form-control${fieldErrors.firstName ? ' error' : ''}`}
                 value={firstName}
                 onChange={(e) => setFirstName(e.target.value)}
-                maxLength={255}
+                maxLength={MAX_FIELD_LENGTH}
               />
               {fieldErrors.firstName && <p className="form-error">{fieldErrors.firstName}</p>}
             </div>
@@ -96,7 +124,7 @@ export function ApplyToRaceModal({ race, onClose }: Props) {
                 className={`form-control${fieldErrors.lastName ? ' error' : ''}`}
                 value={lastName}
                 onChange={(e) => setLastName(e.target.value)}
-                maxLength={255}
+                maxLength={MAX_FIELD_LENGTH}
               />
               {fieldErrors.lastName && <p className="form-error">{fieldErrors.lastName}</p>}
             </div>
@@ -110,17 +138,17 @@ export function ApplyToRaceModal({ race, onClose }: Props) {
                 className="form-control"
                 value={club}
                 onChange={(e) => setClub(e.target.value)}
-                maxLength={255}
+                maxLength={MAX_FIELD_LENGTH}
                 placeholder="e.g. Trail Blazers"
               />
             </div>
 
             <div className="modal-footer">
-              <button type="button" className="btn btn-ghost" onClick={onClose} disabled={loading}>
+              <button type="button" className="btn btn-ghost" onClick={onClose} disabled={submitting}>
                 Cancel
               </button>
-              <button type="submit" className="btn btn-primary" disabled={loading}>
-                {loading ? 'Submitting…' : 'Submit Application'}
+              <button type="submit" className="btn btn-primary" disabled={submitting}>
+                {submitting ? 'Submitting…' : 'Submit Application'}
               </button>
             </div>
           </form>

@@ -9,15 +9,17 @@ import com.race.command.event.ApplicationEvent;
 import com.race.command.event.EventType;
 import com.race.command.event.RaceEvent;
 import com.race.command.exception.ResourceNotFoundException;
+import com.race.command.mapper.ApplicationMapper;
+import com.race.command.mapper.RaceMapper;
 import com.race.command.publisher.EventPublisher;
 import com.race.command.repository.ApplicationRepository;
 import com.race.command.repository.RaceRepository;
-import com.race.command.dto.ApplicationResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
 import java.util.UUID;
 
 @Service
@@ -39,15 +41,13 @@ public class RaceCommandService {
         raceRepository.save(race);
         log.info("Race created: {}", race.getId());
 
-        RaceResponse response = toResponse(race);
-        eventPublisher.publishRaceEvent(new RaceEvent(EventType.CREATED, response));
-        return response;
+        eventPublisher.publishRaceEvent(new RaceEvent(EventType.CREATED, RaceMapper.toEventPayload(race)));
+        return RaceMapper.toResponse(race);
     }
 
     @Transactional
     public RaceResponse patchRace(UUID id, RacePatchRequest request) {
-        Race race = raceRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Race", id));
+        Race race = findRace(id);
 
         if (request.name() != null) {
             race.setName(request.name());
@@ -58,37 +58,30 @@ public class RaceCommandService {
         raceRepository.save(race);
         log.info("Race updated: {}", race.getId());
 
-        RaceResponse response = toResponse(race);
-        eventPublisher.publishRaceEvent(new RaceEvent(EventType.UPDATED, response));
-        return response;
+        eventPublisher.publishRaceEvent(new RaceEvent(EventType.UPDATED, RaceMapper.toEventPayload(race)));
+        return RaceMapper.toResponse(race);
     }
 
+    /**
+     * Deletes a race together with every application submitted for it, publishing one
+     * DELETED event per removed application followed by the race's own DELETED event.
+     */
     @Transactional
     public void deleteRace(UUID id) {
-        Race race = raceRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Race", id));
+        Race race = findRace(id);
+        List<Application> applications = applicationRepository.findByRaceId(id);
 
-        // Delete all applications associated with this race first
-        java.util.List<Application> applications = applicationRepository.findByRaceId(id);
-        if (!applications.isEmpty()) {
-            applicationRepository.deleteAll(applications);
-            log.info("Deleted {} applications associated with race: {}", applications.size(), id);
-            for (Application app : applications) {
-                eventPublisher.publishApplicationEvent(new ApplicationEvent(
-                        EventType.DELETED,
-                        new ApplicationResponse(app.getId(), app.getFirstName(), app.getLastName(), app.getClub(), app.getRaceId(), app.getUserId())
-                ));
-            }
-        }
-
+        applicationRepository.deleteAll(applications);
         raceRepository.delete(race);
-        log.info("Race deleted: {}", id);
+        log.info("Race deleted: {} (removed {} associated applications)", id, applications.size());
 
-        eventPublisher.publishRaceEvent(new RaceEvent(EventType.DELETED, toResponse(race)));
+        applications.forEach(application -> eventPublisher.publishApplicationEvent(
+                new ApplicationEvent(EventType.DELETED, ApplicationMapper.toEventPayload(application))));
+        eventPublisher.publishRaceEvent(new RaceEvent(EventType.DELETED, RaceMapper.toEventPayload(race)));
     }
 
-    private RaceResponse toResponse(Race race) {
-        return new RaceResponse(race.getId(), race.getName(), race.getDistance());
+    private Race findRace(UUID id) {
+        return raceRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Race", id));
     }
 }
-

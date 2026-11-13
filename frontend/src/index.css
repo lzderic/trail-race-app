@@ -481,6 +481,18 @@ tr:hover td {
   color: var(--text-muted);
 }
 
+/* ===== Utilities ===== */
+.table-actions {
+  display: flex;
+  gap: 0.5rem;
+}
+.text-muted {
+  color: var(--text-muted);
+}
+.text-italic {
+  font-style: italic;
+}
+
 /* ===== Responsive ===== */
 @media (max-width: 640px) {
   .detail-grid {

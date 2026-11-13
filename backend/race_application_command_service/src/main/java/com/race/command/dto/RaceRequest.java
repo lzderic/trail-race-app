@@ -11,6 +11,7 @@ public record RaceRequest(
         @Schema(description = "Race name", example = "Mountain Classic", maxLength = 255)
         @NotBlank @Size(max = 255) String name,
 
-        @Schema(description = "Race distance", example = "MARATHON")
+        @Schema(description = "Race distance", example = "Marathon",
+                allowableValues = {"5k", "10k", "HalfMarathon", "Marathon"})
         @NotNull Distance distance
 ) {}

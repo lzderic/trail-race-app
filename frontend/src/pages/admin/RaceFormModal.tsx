@@ -1,55 +1,74 @@
-import { useState } from 'react'
+import { useEffect, useRef, useState, type FormEvent } from 'react'
 import { useAppDispatch, useAppSelector } from '../../store/hooks'
-import { createRace, patchRace } from '../../store/slices/racesSlice'
+import {
+  clearRaceError,
+  createRace,
+  patchRace,
+  selectRacesError,
+} from '../../store/slices/racesSlice'
 import { Alert } from '../../components/common/Alert'
 import { DISTANCE_OPTIONS } from '../../utils/distance'
 import type { Race, Distance } from '../../types'
 
-interface Props {
+interface RaceFormModalProps {
+  /** When provided the form edits this race; otherwise it creates a new one. */
   race?: Race
   onClose: () => void
 }
 
-export function RaceFormModal({ race, onClose }: Props) {
+interface RaceFormErrors {
+  name?: string
+}
+
+const MAX_NAME_LENGTH = 255
+const SUCCESS_CLOSE_DELAY_MS = 900
+
+function validateRaceName(name: string): RaceFormErrors {
+  const trimmed = name.trim()
+  if (!trimmed) return { name: 'Race name is required' }
+  if (trimmed.length > MAX_NAME_LENGTH) return { name: `Name must be at most ${MAX_NAME_LENGTH} characters` }
+  return {}
+}
+
+export function RaceFormModal({ race, onClose }: RaceFormModalProps) {
   const dispatch = useAppDispatch()
-  const { error } = useAppSelector((s) => s.races)
+  const error = useAppSelector(selectRacesError)
 
   const [name, setName] = useState(race?.name ?? '')
   const [distance, setDistance] = useState<Distance>(race?.distance ?? '5k')
-  const [loading, setLoading] = useState(false)
-  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({})
+  const [submitting, setSubmitting] = useState(false)
+  const [fieldErrors, setFieldErrors] = useState<RaceFormErrors>({})
   const [success, setSuccess] = useState(false)
+  const closeTimer = useRef<ReturnType<typeof setTimeout>>()
 
-  const isEdit = !!race
+  const isEdit = race !== undefined
 
-  const validate = () => {
-    const errs: Record<string, string> = {}
-    if (!name.trim()) errs.name = 'Race name is required'
-    if (name.length > 255) errs.name = 'Name must be at most 255 characters'
-    return errs
-  }
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    const errs = validate()
-    if (Object.keys(errs).length > 0) {
-      setFieldErrors(errs)
-      return
+  // Start with a clean error banner and make sure neither the error nor the pending
+  // auto-close outlives the modal.
+  useEffect(() => {
+    dispatch(clearRaceError())
+    return () => {
+      dispatch(clearRaceError())
+      clearTimeout(closeTimer.current)
     }
-    setFieldErrors({})
-    setLoading(true)
+  }, [dispatch])
 
-    let result
-    if (isEdit) {
-      result = await dispatch(patchRace({ id: race.id, data: { name, distance } }))
-    } else {
-      result = await dispatch(createRace({ name, distance }))
-    }
+  const handleSubmit = async (event: FormEvent) => {
+    event.preventDefault()
+    const errors = validateRaceName(name)
+    setFieldErrors(errors)
+    if (errors.name) return
 
-    setLoading(false)
+    const payload = { name: name.trim(), distance }
+    setSubmitting(true)
+    const result = race
+      ? await dispatch(patchRace({ id: race.id, data: payload }))
+      : await dispatch(createRace(payload))
+    setSubmitting(false)
+
     if (createRace.fulfilled.match(result) || patchRace.fulfilled.match(result)) {
       setSuccess(true)
-      setTimeout(onClose, 900)
+      closeTimer.current = setTimeout(onClose, SUCCESS_CLOSE_DELAY_MS)
     }
   }
 
@@ -77,7 +96,7 @@ export function RaceFormModal({ race, onClose }: Props) {
                 className={`form-control${fieldErrors.name ? ' error' : ''}`}
                 value={name}
                 onChange={(e) => setName(e.target.value)}
-                maxLength={255}
+                maxLength={MAX_NAME_LENGTH}
                 placeholder="e.g. Mountain Classic"
                 autoFocus
               />
@@ -94,20 +113,20 @@ export function RaceFormModal({ race, onClose }: Props) {
                 value={distance}
                 onChange={(e) => setDistance(e.target.value as Distance)}
               >
-                {DISTANCE_OPTIONS.map((opt) => (
-                  <option key={opt.value} value={opt.value}>
-                    {opt.label}
+                {DISTANCE_OPTIONS.map((option) => (
+                  <option key={option.value} value={option.value}>
+                    {option.label}
                   </option>
                 ))}
               </select>
             </div>
 
             <div className="modal-footer">
-              <button type="button" className="btn btn-ghost" onClick={onClose} disabled={loading}>
+              <button type="button" className="btn btn-ghost" onClick={onClose} disabled={submitting}>
                 Cancel
               </button>
-              <button type="submit" className="btn btn-primary" disabled={loading}>
-                {loading ? 'Saving…' : isEdit ? 'Save Changes' : 'Create Race'}
+              <button type="submit" className="btn btn-primary" disabled={submitting}>
+                {submitting ? 'Saving…' : isEdit ? 'Save Changes' : 'Create Race'}
               </button>
             </div>
           </form>

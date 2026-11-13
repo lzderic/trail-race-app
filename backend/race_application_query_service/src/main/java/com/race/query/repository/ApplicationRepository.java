@@ -10,5 +10,6 @@ import java.util.UUID;
 @Repository
 public interface ApplicationRepository extends JpaRepository<Application, UUID> {
     List<Application> findByRaceId(UUID raceId);
-}
 
+    List<Application> findByUserId(UUID userId);
+}

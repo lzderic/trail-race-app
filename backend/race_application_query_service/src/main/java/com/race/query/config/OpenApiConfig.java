@@ -23,6 +23,8 @@ public class OpenApiConfig {
                                 Read-side of the Trail Race CQRS backend.
                                 GET endpoints for Races and Applications, populated via RabbitMQ events.
                                 Requires any authenticated user role (**Applicant** or **Administrator**).
+                                Races are visible to everyone; applications are visible to their owner and to administrators.
+                                Every error is returned as an RFC 9457 Problem Details body.
                                 
                                 **Login** via `POST /api/auth/login` to obtain a JWT, then click **Authorize** and paste the token.
                                 

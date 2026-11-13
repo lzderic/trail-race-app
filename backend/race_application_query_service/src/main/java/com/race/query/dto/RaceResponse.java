@@ -13,6 +13,7 @@ public record RaceResponse(
         @Schema(description = "Race name", example = "Mountain Classic")
         String name,
 
-        @Schema(description = "Race distance", example = "MARATHON")
+        @Schema(description = "Race distance", example = "Marathon",
+                allowableValues = {"5k", "10k", "HalfMarathon", "Marathon"})
         Distance distance
 ) {}

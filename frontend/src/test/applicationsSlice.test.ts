@@ -1,44 +1,89 @@
 import { describe, it, expect } from 'vitest'
-import { configureStore } from '@reduxjs/toolkit'
 import applicationsReducer, {
   clearApplicationError,
-  clearSelectedApplication,
+  createApplication,
+  deleteApplication,
+  fetchApplications,
 } from '../store/slices/applicationsSlice'
+import type { Application, ApplicationsState } from '../types'
 
-/* eslint-disable @typescript-eslint/no-explicit-any */
-function makeStore(preloadedState?: any) {
-  return configureStore({
-    reducer: { applications: applicationsReducer },
-    preloadedState,
-  } as any)
+const appA: Application = {
+  id: 'a1',
+  firstName: 'Jane',
+  lastName: 'Doe',
+  club: null,
+  raceId: 'r1',
+  userId: 'u1',
 }
-/* eslint-enable @typescript-eslint/no-explicit-any */
-describe('applicationsSlice — extended', () => {
-  it('clearSelectedApplication sets selectedApplication to null', () => {
-    const store = makeStore({
-      applications: {
-        items: [],
-        loading: false,
-        error: null,
-        selectedApplication: { id: 'a1', firstName: 'J', lastName: 'D', raceId: 'r1' },
-      },
-    })
-    store.dispatch(clearSelectedApplication())
-    expect(store.getState().applications.selectedApplication).toBeNull()
+const appB: Application = {
+  id: 'a2',
+  firstName: 'Marco',
+  lastName: 'Rossi',
+  club: 'Trail Blazers',
+  raceId: 'r2',
+  userId: 'u2',
+}
+
+const stateWith = (items: Application[], overrides: Partial<ApplicationsState> = {}): ApplicationsState => ({
+  items,
+  loading: false,
+  error: null,
+  ...overrides,
+})
+
+describe('applicationsSlice', () => {
+  it('has an empty initial state', () => {
+    const state = applicationsReducer(undefined, { type: '@@init' })
+    expect(state).toEqual({ items: [], loading: false, error: null })
   })
-  it('clearApplicationError sets error to null', () => {
-    const store = makeStore({
-      applications: { items: [], loading: false, error: 'Oops', selectedApplication: null },
-    })
-    store.dispatch(clearApplicationError())
-    expect(store.getState().applications.error).toBeNull()
+
+  it('sets loading while fetching and stores the result', () => {
+    const pending = applicationsReducer(stateWith([]), fetchApplications.pending('req', undefined))
+    expect(pending.loading).toBe(true)
+
+    const fulfilled = applicationsReducer(pending, fetchApplications.fulfilled([appA], 'req', undefined))
+    expect(fulfilled.loading).toBe(false)
+    expect(fulfilled.items).toEqual([appA])
   })
-  it('initial state has empty items and no error', () => {
-    const store = makeStore()
-    const state = store.getState().applications
-    expect(state.items).toEqual([])
+
+  it('stores the error when fetching fails', () => {
+    const state = applicationsReducer(
+      stateWith([]),
+      fetchApplications.rejected(null, 'req', undefined, 'Server down'),
+    )
     expect(state.loading).toBe(false)
-    expect(state.error).toBeNull()
-    expect(state.selectedApplication).toBeNull()
+    expect(state.error).toBe('Server down')
+  })
+
+  it('appends a created application without mutating the previous state', () => {
+    const previous = stateWith([appA])
+
+    const next = applicationsReducer(
+      previous,
+      createApplication.fulfilled(appB, 'req', { firstName: 'Marco', lastName: 'Rossi', raceId: 'r2' }),
+    )
+
+    expect(next.items).toEqual([appA, appB])
+    expect(previous.items).toEqual([appA])
+    expect(next.items).not.toBe(previous.items)
+  })
+
+  it('removes a deleted application', () => {
+    const next = applicationsReducer(stateWith([appA, appB]), deleteApplication.fulfilled(appA.id, 'req', appA.id))
+    expect(next.items).toEqual([appB])
+  })
+
+  it('records the error of a failed mutation', () => {
+    const next = applicationsReducer(
+      stateWith([appA]),
+      deleteApplication.rejected(null, 'req', appA.id, 'You can only delete your own applications'),
+    )
+    expect(next.items).toEqual([appA])
+    expect(next.error).toBe('You can only delete your own applications')
+  })
+
+  it('clearApplicationError sets error to null', () => {
+    const next = applicationsReducer(stateWith([], { error: 'Oops' }), clearApplicationError())
+    expect(next.error).toBeNull()
   })
 })

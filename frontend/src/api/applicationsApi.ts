@@ -1,10 +1,12 @@
-import { commandApi } from './axiosInstances'
-import { queryApi } from './axiosInstances'
+import { commandApi, queryApi } from './axiosInstances'
 import type { Application, ApplicationRequest } from '../types'
 
+const APPLICATIONS_PATH = '/api/applications'
+
 export const applicationsApi = {
-  getAll: () => queryApi.get<Application[]>('/api/applications'),
-  getById: (id: string) => queryApi.get<Application>(`/api/applications/${id}`),
-  create: (data: ApplicationRequest) => commandApi.post<Application>('/api/applications', data),
-  delete: (id: string) => commandApi.delete(`/api/applications/${id}`),
+  /** Administrators receive every application; applicants receive only their own. */
+  getAll: () => queryApi.get<Application[]>(APPLICATIONS_PATH),
+  getById: (id: string) => queryApi.get<Application>(`${APPLICATIONS_PATH}/${id}`),
+  create: (data: ApplicationRequest) => commandApi.post<Application>(APPLICATIONS_PATH, data),
+  delete: (id: string) => commandApi.delete<void>(`${APPLICATIONS_PATH}/${id}`),
 }

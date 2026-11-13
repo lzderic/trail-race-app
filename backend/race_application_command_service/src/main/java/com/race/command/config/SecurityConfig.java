@@ -1,7 +1,10 @@
 package com.race.command.config;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.race.command.security.JwtAuthFilter;
+import com.race.command.security.ProblemDetailSecurityHandler;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
@@ -29,34 +32,35 @@ import java.util.List;
 @RequiredArgsConstructor
 public class SecurityConfig {
 
+    private static final String ROLE_ADMINISTRATOR = "ADMINISTRATOR";
+    private static final String ROLE_APPLICANT = "APPLICANT";
+
     private final JwtAuthFilter jwtAuthFilter;
     private final UserDetailsService userDetailsService;
 
-    @org.springframework.beans.factory.annotation.Value("${cors.allowed-origins:http://localhost:3000}")
+    @Value("${cors.allowed-origins:http://localhost:3000}")
     private List<String> allowedOrigins;
 
     @Bean
-    public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
+    public SecurityFilterChain filterChain(HttpSecurity http, ObjectMapper objectMapper) throws Exception {
+        ProblemDetailSecurityHandler securityErrorHandler = new ProblemDetailSecurityHandler(objectMapper);
+
         http
             .cors(cors -> cors.configurationSource(corsConfigurationSource()))
             .csrf(AbstractHttpConfigurer::disable)
-            .sessionManagement(s -> s.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-            .exceptionHandling(e -> e.authenticationEntryPoint(
-                (request, response, ex) -> response.sendError(
-                    jakarta.servlet.http.HttpServletResponse.SC_UNAUTHORIZED, ex.getMessage())))
+            .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+            .exceptionHandling(handling -> handling
+                .authenticationEntryPoint(securityErrorHandler)
+                .accessDeniedHandler(securityErrorHandler))
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers("/api/auth/**").permitAll()
-                .requestMatchers(
-                    "/swagger-ui/**",
-                    "/swagger-ui.html",
-                    "/v3/api-docs/**"
-                ).permitAll()
+                .requestMatchers("/swagger-ui/**", "/swagger-ui.html", "/v3/api-docs/**").permitAll()
                 .requestMatchers("/actuator/**").permitAll()
-                .requestMatchers(HttpMethod.POST, "/api/races/**").hasRole("ADMINISTRATOR")
-                .requestMatchers(HttpMethod.PATCH, "/api/races/**").hasRole("ADMINISTRATOR")
-                .requestMatchers(HttpMethod.DELETE, "/api/races/**").hasRole("ADMINISTRATOR")
-                .requestMatchers(HttpMethod.POST, "/api/applications/**").hasAnyRole("ADMINISTRATOR", "APPLICANT")
-                .requestMatchers(HttpMethod.DELETE, "/api/applications/**").hasAnyRole("ADMINISTRATOR", "APPLICANT")
+                .requestMatchers(HttpMethod.POST, "/api/races/**").hasRole(ROLE_ADMINISTRATOR)
+                .requestMatchers(HttpMethod.PATCH, "/api/races/**").hasRole(ROLE_ADMINISTRATOR)
+                .requestMatchers(HttpMethod.DELETE, "/api/races/**").hasRole(ROLE_ADMINISTRATOR)
+                .requestMatchers(HttpMethod.POST, "/api/applications/**").hasAnyRole(ROLE_ADMINISTRATOR, ROLE_APPLICANT)
+                .requestMatchers(HttpMethod.DELETE, "/api/applications/**").hasAnyRole(ROLE_ADMINISTRATOR, ROLE_APPLICANT)
                 .anyRequest().authenticated()
             )
             .authenticationProvider(authenticationProvider())
@@ -95,5 +99,3 @@ public class SecurityConfig {
         return new BCryptPasswordEncoder();
     }
 }
-
-

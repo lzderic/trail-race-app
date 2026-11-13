@@ -1,46 +1,56 @@
-import { createSlice, createAsyncThunk } from '@reduxjs/toolkit'
-import type { AuthState, LoginRequest, User } from '../../types'
+import { createAsyncThunk, createSlice } from '@reduxjs/toolkit'
+import type { AuthSession, AuthState, LoginRequest } from '../../types'
+import type { RootState } from '../rootReducer'
 import { authApi } from '../../api/authApi'
+import { getApiErrorMessage } from '../../api/errors'
 import { jwtDecode } from '../../utils/jwtDecode'
+import { loadAuthSession } from '../../utils/authSession'
 
-const storedToken = localStorage.getItem('jwt_token')
-const storedUser = localStorage.getItem('jwt_user')
+export const LOGIN_FAILED_MESSAGE = 'Invalid email or password. Please try again.'
+export const SESSION_EXPIRED_MESSAGE = 'Your session has expired. Please sign in again.'
 
-const initialState: AuthState = {
-  token: storedToken,
-  user: storedUser ? (JSON.parse(storedUser) as User) : null,
-  loading: false,
-  error: null,
+/** Restores a previously persisted session so a page refresh keeps the user signed in. */
+function createInitialState(): AuthState {
+  const session = loadAuthSession()
+  return {
+    token: session?.token ?? null,
+    user: session?.user ?? null,
+    loading: false,
+    error: null,
+  }
 }
 
-export const login = createAsyncThunk(
+export const login = createAsyncThunk<AuthSession, LoginRequest, { rejectValue: string }>(
   'auth/login',
-  async (credentials: LoginRequest, { rejectWithValue }) => {
+  async (credentials, { rejectWithValue }) => {
     try {
-      const res = await authApi.login(credentials)
-      const token = res.data.token
-      const user = jwtDecode(token)
-      localStorage.setItem('jwt_token', token)
-      localStorage.setItem('jwt_user', JSON.stringify(user))
-      return { token, user }
-    } catch (err: unknown) {
-      const message =
-        (err as { response?: { data?: { message?: string } } })?.response?.data?.message ??
-        'Invalid email or password. Please try again.'
-      return rejectWithValue(message)
+      const { data } = await authApi.login(credentials)
+      return { token: data.token, user: jwtDecode(data.token) }
+    } catch (error) {
+      return rejectWithValue(getApiErrorMessage(error, LOGIN_FAILED_MESSAGE))
     }
   },
 )
 
+/*
+ * Reducers receive an Immer draft, so the assignments below describe the next state and
+ * Redux Toolkit produces a new immutable object; the previous state is never changed.
+ * Reducers are pure: persisting the session to storage happens in the auth persistence
+ * middleware, never here.
+ */
 const authSlice = createSlice({
   name: 'auth',
-  initialState,
+  initialState: createInitialState,
   reducers: {
     logout(state) {
       state.token = null
       state.user = null
-      localStorage.removeItem('jwt_token')
-      localStorage.removeItem('jwt_user')
+      state.error = null
+    },
+    sessionExpired(state) {
+      state.token = null
+      state.user = null
+      state.error = SESSION_EXPIRED_MESSAGE
     },
     clearError(state) {
       state.error = null
@@ -59,10 +69,14 @@ const authSlice = createSlice({
       })
       .addCase(login.rejected, (state, action) => {
         state.loading = false
-        state.error = action.payload as string
+        state.error = action.payload ?? LOGIN_FAILED_MESSAGE
       })
   },
 })
 
-export const { logout, clearError } = authSlice.actions
+export const { logout, sessionExpired, clearError } = authSlice.actions
 export default authSlice.reducer
+
+export const selectCurrentUser = (state: RootState) => state.auth.user
+export const selectIsAuthenticated = (state: RootState) => state.auth.token !== null && state.auth.user !== null
+export const selectIsAdministrator = (state: RootState) => state.auth.user?.role === 'Administrator'

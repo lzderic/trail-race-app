@@ -1,8 +1,10 @@
 package com.race.query.service;
 
 import com.race.query.dto.RaceResponse;
+import com.race.query.entity.Application;
 import com.race.query.entity.Race;
 import com.race.query.enums.Distance;
+import com.race.query.event.RaceEventPayload;
 import com.race.query.exception.ResourceNotFoundException;
 import com.race.query.repository.ApplicationRepository;
 import com.race.query.repository.RaceRepository;
@@ -22,7 +24,9 @@ import java.util.UUID;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 class RaceQueryServiceTest {
@@ -77,20 +81,47 @@ class RaceQueryServiceTest {
     }
 
     @Test
-    void upsertRace_newRace_shouldSave() {
-        UUID newId = UUID.randomUUID();
-        when(raceRepository.findById(newId)).thenReturn(Optional.empty());
+    void upsertRace_newRace_shouldSaveWithPayloadValues() {
+        RaceEventPayload payload = new RaceEventPayload(UUID.randomUUID(), "New Race", Distance.MARATHON);
+        when(raceRepository.findById(payload.id())).thenReturn(Optional.empty());
         when(raceRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
-        raceQueryService.upsertRace(newId, "New Race", Distance.MARATHON);
+        raceQueryService.upsertRace(payload);
 
         ArgumentCaptor<Race> captor = ArgumentCaptor.forClass(Race.class);
         verify(raceRepository).save(captor.capture());
+        assertThat(captor.getValue().getId()).isEqualTo(payload.id());
         assertThat(captor.getValue().getName()).isEqualTo("New Race");
+        assertThat(captor.getValue().getDistance()).isEqualTo(Distance.MARATHON);
     }
 
     @Test
-    void deleteRace_whenExists_shouldDelete() {
+    void upsertRace_existingRace_shouldUpdateInPlace() {
+        RaceEventPayload payload = new RaceEventPayload(race.getId(), "Renamed", Distance.TEN_K);
+        when(raceRepository.findById(race.getId())).thenReturn(Optional.of(race));
+        when(raceRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+        raceQueryService.upsertRace(payload);
+
+        verify(raceRepository).save(race);
+        assertThat(race.getName()).isEqualTo("Renamed");
+        assertThat(race.getDistance()).isEqualTo(Distance.TEN_K);
+    }
+
+    @Test
+    void deleteRace_whenExists_shouldDeleteRaceAndItsApplications() {
+        Application application = Application.builder().id(UUID.randomUUID()).raceId(race.getId()).build();
+        when(raceRepository.findById(race.getId())).thenReturn(Optional.of(race));
+        when(applicationRepository.findByRaceId(race.getId())).thenReturn(List.of(application));
+
+        raceQueryService.deleteRace(race.getId());
+
+        verify(applicationRepository).deleteAll(List.of(application));
+        verify(raceRepository).delete(race);
+    }
+
+    @Test
+    void deleteRace_withoutApplications_shouldDeleteRace() {
         when(raceRepository.findById(race.getId())).thenReturn(Optional.of(race));
         when(applicationRepository.findByRaceId(race.getId())).thenReturn(Collections.emptyList());
 
@@ -107,6 +138,6 @@ class RaceQueryServiceTest {
         raceQueryService.deleteRace(randomId);
 
         verify(raceRepository, never()).delete(any());
+        verify(applicationRepository, never()).deleteAll(any());
     }
 }
-

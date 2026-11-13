@@ -251,9 +251,11 @@ Returns `{ "token": "<JWT>" }`. Include the token as `Authorization: Bearer <JWT
 
 **Race payload:**
 ```json
-{ "name": "Mountain Classic", "distance": "MARATHON" }
+{ "name": "Mountain Classic", "distance": "Marathon" }
 ```
-Distance values: `FIVE_K`, `TEN_K`, `HALF_MARATHON`, `MARATHON`
+Distance values: `5k`, `10k`, `HalfMarathon`, `Marathon` (these labels are what the API returns; the enum constant names `FIVE_K`, `TEN_K`, `HALF_MARATHON`, `MARATHON` are accepted as input as well).
+
+`DELETE /api/applications/{id}`: administrators may delete any application, applicants only their own (otherwise `403`).
 
 **Application payload:**
 ```json
@@ -271,8 +273,26 @@ Distance values: `FIVE_K`, `TEN_K`, `HALF_MARATHON`, `MARATHON`
 |---|---|---|
 | `GET` | `/api/races` | List all races |
 | `GET` | `/api/races/{id}` | Get a race by ID |
-| `GET` | `/api/applications` | List all applications |
-| `GET` | `/api/applications/{id}` | Get an application by ID |
+| `GET` | `/api/applications` | List applications — administrators receive all, applicants only their own |
+| `GET` | `/api/applications/{id}` | Get an application by ID — applicants may only read their own (otherwise `403`) |
+
+### Error responses
+
+Every error from both services is an [RFC 9457 Problem Details](https://www.rfc-editor.org/rfc/rfc9457) body
+(`Content-Type: application/problem+json`), including the `401`/`403` responses produced by the security filter chain:
+
+```json
+{ "type": "about:blank", "title": "Bad Request", "status": 400, "detail": "Validation failed",
+  "errors": { "name": "must not be blank", "distance": "must not be null" } }
+```
+
+| Status | When |
+|---|---|
+| `400` | Validation failure (`errors` lists each invalid field), malformed JSON, unknown distance, invalid UUID in the path |
+| `401` | Missing/expired token, or invalid credentials on login |
+| `403` | Role not allowed, or an applicant touching another user's application |
+| `404` | Race / application not found |
+| `500` | Unexpected error (details are logged, never returned) |
 
 ## Frontend Application Guide
 
@@ -304,6 +324,16 @@ The React SPA (Vite + TypeScript + Redux Toolkit) runs on **http://localhost:300
 2. You see the **Races** page (home) — same list of races
 3. Navigate to **Admin > Races** to create new races, edit existing ones (name/distance), or delete them
 4. Navigate to **Admin > Applications** to view all applications across all users
+
+### State management notes
+
+- The Redux store is the single source of truth for the signed-in session. Reducers are pure (Redux Toolkit /
+  Immer drafts, no side effects); persisting the session to `localStorage` is done by a listener middleware
+  (`src/store/authPersistence.ts`).
+- The Axios clients (`src/api/axiosInstances.ts`) read the token from the store and report expired sessions
+  back to it (`sessionExpired` action) instead of touching storage or `window.location` themselves.
+- Backend errors (RFC 9457 Problem Details) are mapped to user-facing messages in one place:
+  `src/api/errors.ts`.
 
 ### Technology stack
 
@@ -494,7 +524,13 @@ Both services depend on this module (`com.race:shared-db-migrations`) and Flyway
 | `race.updated` | Race patched |
 | `race.deleted` | Race deleted |
 | `application.created` | New application created |
-| `application.deleted` | Application deleted |
+| `application.deleted` | Application deleted (also emitted for every application removed together with a deleted race) |
+
+- **Message shape**: `{ "eventType": "CREATED | UPDATED | DELETED", "payload": { ... } }`. The payload types
+  (`RaceEventPayload`, `ApplicationEventPayload`) are dedicated messaging contracts, kept separate from the HTTP
+  response DTOs so the public API and the event schema can evolve independently.
+- **Delivery**: the command service publishes events only after the database transaction has committed, so the
+  read side never processes an event for a write that was rolled back.
 
 ## Project Structure
 
@@ -524,12 +560,13 @@ trail-race-app/
 │   │   │   ├── controller/      # REST controllers (+ AuthController)
 │   │   │   ├── dto/             # Request / response records
 │   │   │   ├── entity/          # JPA entities
-│   │   │   ├── enums/           # Distance, Role, EventType
-│   │   │   ├── event/           # Event payload classes
-│   │   │   ├── exception/       # GlobalExceptionHandler
-│   │   │   ├── publisher/       # RabbitMQ event publisher
+│   │   │   ├── enums/           # Distance, Role
+│   │   │   ├── event/           # Integration events + payload records (RabbitMQ contract)
+│   │   │   ├── exception/       # GlobalExceptionHandler (RFC 9457 Problem Details)
+│   │   │   ├── mapper/          # Entity → response DTO / event payload mapping
+│   │   │   ├── publisher/       # RabbitMQ event publisher (sends after commit)
 │   │   │   ├── repository/      # Spring Data JPA repos
-│   │   │   ├── security/        # JWT filter + service
+│   │   │   ├── security/        # JWT filter + service, AuthenticatedUser principal
 │   │   │   └── service/         # Business logic
 │   │   ├── src/main/resources/db/migration/  # Service-specific Flyway scripts
 │   │   └── src/test/            # Unit tests
@@ -542,12 +579,13 @@ trail-race-app/
 │       │   ├── controller/      # REST controllers (+ AuthController)
 │       │   ├── dto/             # Response records
 │       │   ├── entity/          # JPA entities
-│       │   ├── enums/           # Distance, Role, EventType
-│       │   ├── event/           # Event payload classes
-│       │   ├── exception/       # GlobalExceptionHandler
+│       │   ├── enums/           # Distance, Role
+│       │   ├── event/           # Integration events + payload records (RabbitMQ contract)
+│       │   ├── exception/       # GlobalExceptionHandler (RFC 9457 Problem Details)
 │       │   ├── listener/        # RabbitMQ event listener
+│       │   ├── mapper/          # Entity → response DTO mapping
 │       │   ├── repository/      # Spring Data JPA repos
-│       │   ├── security/        # JWT filter + service
+│       │   ├── security/        # JWT filter + service, AuthenticatedUser principal
 │       │   └── service/         # Business logic
 │       ├── src/main/resources/db/migration/  # Service-specific Flyway scripts
 │       └── src/test/            # Unit tests
@@ -561,10 +599,11 @@ trail-race-app/
 │   ├── eslint.config.js
 │   ├── .prettierrc
 │   └── src/
-│       ├── api/                 # Axios API clients
-│       ├── components/          # Reusable UI components (+ stories)
+│       ├── api/                 # Axios API clients + Problem Details → message mapping
+│       ├── components/          # Reusable UI components (tables, dialogs, badges + stories)
+│       ├── hooks/               # Shared hooks (useConfirmDelete)
 │       ├── pages/               # Route pages (Login, Races, Applications, Admin)
-│       ├── store/               # Redux store + slices
+│       ├── store/               # Redux store, slices, selectors, auth persistence middleware
 │       ├── stories/             # Storybook stories
 │       ├── test/                # Vitest unit tests
 │       ├── types/               # TypeScript types

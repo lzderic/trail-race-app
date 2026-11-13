@@ -1,15 +1,23 @@
 import { configureStore } from '@reduxjs/toolkit'
-import authReducer from './slices/authSlice'
-import racesReducer from './slices/racesSlice'
-import applicationsReducer from './slices/applicationsSlice'
+import { rootReducer } from './rootReducer'
+import { authPersistenceMiddleware } from './authPersistence'
+import { sessionExpired } from './slices/authSlice'
+import { configureApiClients } from '../api/axiosInstances'
 
 export const store = configureStore({
-  reducer: {
-    auth: authReducer,
-    races: racesReducer,
-    applications: applicationsReducer,
+  reducer: rootReducer,
+  middleware: (getDefaultMiddleware) =>
+    getDefaultMiddleware().prepend(authPersistenceMiddleware.middleware),
+})
+
+// The HTTP layer reads the token from the store and reports expired sessions back to it,
+// so authentication state has exactly one owner.
+configureApiClients({
+  getAccessToken: () => store.getState().auth.token,
+  onUnauthorized: () => {
+    store.dispatch(sessionExpired())
   },
 })
 
-export type RootState = ReturnType<typeof store.getState>
+export type { RootState } from './rootReducer'
 export type AppDispatch = typeof store.dispatch

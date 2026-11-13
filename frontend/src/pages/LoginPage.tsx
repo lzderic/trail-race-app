@@ -1,28 +1,31 @@
-import { useState, useEffect } from 'react'
+import { useEffect, useState, type FormEvent } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAppDispatch, useAppSelector } from '../store/hooks'
-import { login, clearError } from '../store/slices/authSlice'
+import { clearError, login, selectIsAuthenticated } from '../store/slices/authSlice'
 
 export function LoginPage() {
   const dispatch = useAppDispatch()
   const navigate = useNavigate()
-  const { loading, error, token } = useAppSelector((s) => s.auth)
+  const loading = useAppSelector((state) => state.auth.loading)
+  const error = useAppSelector((state) => state.auth.error)
+  const isAuthenticated = useAppSelector(selectIsAuthenticated)
 
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
 
   useEffect(() => {
-    if (token) navigate('/', { replace: true })
-  }, [token, navigate])
+    if (isAuthenticated) navigate('/', { replace: true })
+  }, [isAuthenticated, navigate])
 
+  // Do not carry a stale login error over to the next visit of this page.
   useEffect(() => {
     return () => {
       dispatch(clearError())
     }
   }, [dispatch])
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault()
+  const handleSubmit = (event: FormEvent) => {
+    event.preventDefault()
     dispatch(login({ email, password }))
   }
 

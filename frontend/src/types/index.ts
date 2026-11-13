@@ -11,9 +11,9 @@ export interface Application {
   id: string
   firstName: string
   lastName: string
-  club?: string
+  club: string | null
   raceId: string
-  userId?: string
+  userId: string | null
 }
 
 export interface User {
@@ -22,6 +22,12 @@ export interface User {
   lastName: string
   email: string
   role: Role
+}
+
+/** A signed-in user together with the bearer token that authenticates them. */
+export interface AuthSession {
+  token: string
+  user: User
 }
 
 export interface AuthState {
@@ -35,14 +41,12 @@ export interface RacesState {
   items: Race[]
   loading: boolean
   error: string | null
-  selectedRace: Race | null
 }
 
 export interface ApplicationsState {
   items: Application[]
   loading: boolean
   error: string | null
-  selectedApplication: Application | null
 }
 
 export interface LoginRequest {
